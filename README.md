@@ -2,6 +2,10 @@
 
 휴대폰 스피커로 오카리나 선율을 연주하는 비공식 팬 웹앱. Nintendo/HORI와 제휴하지 않습니다.
 
+배포 주소: https://erist.github.io/ocarina-of-time-web/
+
+사용자 승인에 따라 `erist/ocarina-of-time-web` 공개 저장소와 무료 GitHub Pages로 운영합니다.
+
 ## 제공 기능
 
 - 숲색·금색·푸른 오카리나·양피지 악보의 모바일 우선 화면

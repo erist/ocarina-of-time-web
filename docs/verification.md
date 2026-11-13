@@ -16,4 +16,11 @@
 
 ## 호스팅
 
-비공개 저장소 `erist/ocarina-of-time-web` 생성·소스 업로드 완료. GitHub Pages 활성화 시 현재 요금제는 비공개 저장소를 지원하지 않는다는 422 응답을 확인했습니다. 저장소 공개 전환은 사용자 승인 대기 중이며 아직 공개 URL 배포는 완료되지 않았습니다.
+사용자가 erist 계정의 공개 저장소 배포를 명시 승인했습니다. `erist/ocarina-of-time-web`을 공개로 전환하고 무료 GitHub Pages 배포 완료를 확인했습니다.
+
+- URL: https://erist.github.io/ocarina-of-time-web/
+- 소스: `gh-pages` 브랜치 `/`, HTTPS 강제 적용
+- 배포 커밋: `e0020a8e6b5eeef42d1b02c58c2100b3bb04d545`
+- Pages build 상태: `built`, 오류 없음
+- 실제 공개 주소의 브라우저에서 홈페이지, 시간의 노래 전체 악보 이미지(1912px), 자동 연주 시작·정지, 공식 음원 연결을 확인했습니다.
+- 검사 중 브라우저 콘솔 오류 없음.
