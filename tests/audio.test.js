@@ -233,6 +233,25 @@ test('normal completion reports each note and exactly one completion', async () 
   assert.equal(clock.jobs.size, 0);
 });
 
+test('lullaby notes have only a brief separation at every supported speed', async () => {
+  const song = SONGS.find(song => song.id === 'zelda');
+  for (const bpm of [50, 100, 160]) {
+    const audio = await readyAudio();
+    const playing = audio.play(songPlaybackSequence(song), { bpm });
+    await Promise.resolve();
+    const tones = audio.context.oscillators.filter((_, index) => index % 2 === 0);
+    assert.equal(tones.length, 6);
+    for (let index = 1; index < tones.length; index++) {
+      const gap = tones[index].startedAt - tones[index - 1].stoppedAt;
+      assert.ok(gap > 0 && gap < .025, `${bpm}%: no overlap or extended silence`);
+    }
+    const finalDuration = tones.at(-1).stoppedAt - tones.at(-1).startedAt;
+    assert.ok(finalDuration <= .35 * 100 / bpm, 'last note stays short');
+    clock.tick(10000);
+    assert.equal(await playing, true);
+  }
+});
+
 test('ending an old voice cleans up its graph without clearing the current voice', async () => {
   const audio = await readyAudio();
   audio.noteOn(74);

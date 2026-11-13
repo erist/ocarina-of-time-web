@@ -6,7 +6,7 @@ import { TouchFingering } from './touch-fingering.js';
 import { TwoTouchInstrument } from './two-touch.js';
 import { resolvePlayLayout } from './play-layout.js';
 import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from './control-mapping.js';
-import { songPlaybackSequence } from './song-performance.js?v=20261114-button-audio';
+import { songPlaybackSequence } from './song-performance.js?v=20261114-lullaby';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];

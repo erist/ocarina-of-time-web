@@ -41,7 +41,7 @@ test('each song plays the canonical short game command in the correct order', ()
     assert.deepEqual(sequence.filter(note => note.midi !== null).map(note => note.midi), gameCommands[song.id]);
     assert.deepEqual(sequence.filter(note => note.midi !== null).map(note => note.noteIndex), song.notes.map((_, i) => i));
     assert.ok(sequence.every(note => note.beats > 0));
-    assert.ok(sequence.filter(note => note.midi !== null).every(note => note.beats * .6 <= .35 + 1e-9));
+    if (song.id !== 'zelda') assert.ok(sequence.filter(note => note.midi !== null).every(note => note.beats * .6 <= .35 + 1e-9));
     assert.ok(Math.abs(sequence.at(-1).beats * .6 - .35) < 1e-9, 'final note has no extended tail');
   }
 });
@@ -112,6 +112,17 @@ test('shortened notes retain measured attack spacing and clear score emphasis du
     assert.ok(Math.abs(starts[i] - expected) < 1e-9);
   }
   assert.deepEqual(sequence.filter(note => note.midi !== null).map(note => note.midi), [74, 71, 69, 74, 71, 69]);
+});
+
+test('lullaby sustains the connected phrase without inserting long silences', () => {
+  const song = SONGS.find(song => song.id === 'zelda');
+  const sequence = songPlaybackSequence(song);
+  assert.deepEqual(sequence.map(note => note.midi), [83, 86, 81, 83, 86, 81]);
+  const expectedSlots = [.853, .434, 1.279, .842, .431, .35];
+  sequence.forEach((note, index) => {
+    assert.equal(note.noteIndex, index);
+    assert.ok(Math.abs(note.beats * .6 - expectedSlots[index]) < 1e-9);
+  });
 });
 
 test('custom eight-note songs also use short notes at the selected octave', () => {
