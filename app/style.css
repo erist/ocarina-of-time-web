@@ -360,3 +360,6 @@ dialog::backdrop { background: #040e0bd4; backdrop-filter: blur(7px); }
   .performance { overflow-y: auto; }
   .instrument-stage { flex-shrink: 0; min-height: 280px; }
 }
+
+.score-viewer { aspect-ratio: 1912 / 874; }
+.score-viewer img { width: 100%; height: 100%; object-fit: contain; }
