@@ -1,17 +1,16 @@
 import { OcarinaAudio } from './audio.js?v=20261113-two-touch';
-import { SONGS, NOTES, PLAYBACK_NOTE } from './songs.js?v=20261113-two-touch';
+import { SONGS, NOTES, PLAYBACK_NOTE } from './songs.js?v=20261114-button-audio';
 import { HOLES, getFingering, getMidiForHoles } from './fingering.js';
 import { bodySvg } from './instrument-art.js?v=20261113-ceramic';
 import { TouchFingering } from './touch-fingering.js';
 import { TwoTouchInstrument } from './two-touch.js';
 import { resolvePlayLayout } from './play-layout.js';
 import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from './control-mapping.js';
-import { noteIndexAt } from './song-performance.js';
+import { songPlaybackSequence } from './song-performance.js?v=20261114-button-audio';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const audio = new OcarinaAudio();
-const media = $('#official-audio');
 const noteEntries = Object.entries(NOTES);
 const holds = new Map();
 const fingers = new TouchFingering();
@@ -21,7 +20,7 @@ const maxTouches = Number(navigator.maxTouchPoints) || 0;
 let inputMode = maxTouches >= 9 ? 'direct' : 'tap';
 let fingerVoice = null, fingerMidi = null, fingerTimer, fingerGeneration = 0, fingerReady = null;
 const symbols = ['♧', '◷', '☼', 'ϟ', '♞', '❧', '❧', '♨', '♧', '◇', '☾', '✦'];
-let mode = 'touch', rotationMode = 'right', mediaFrame = null, mediaSong = null, mediaIndex = -1, filter = 'all', selected = null, playing = null, officialPlaying = false;
+let mode = 'touch', rotationMode = 'right', filter = 'all', selected = null, playing = null;
 let closed = new Set(getFingering(74).closed), progress = 0;
 let volume = 0.7, bpm = 100, octave = 0, haptics = true, custom = [];
 let toastTimer, practiceTimer, previewTimer, playGeneration = 0;
@@ -143,10 +142,6 @@ function stop() {
   clearTimeout(previewTimer);
   clearFingerInput();
   audio.stopAll();
-  media.pause();
-  cancelAnimationFrame(mediaFrame);
-  mediaFrame = null; mediaSong = null; mediaIndex = -1;
-  officialPlaying = false;
   playing = null;
   holds.clear();
   highlight(null);
@@ -182,7 +177,7 @@ async function startHold(el, key, { record = true } = {}) {
   const midi = baseMidi == null ? null : mode === 'touch' ? Math.max(71, Math.min(89, baseMidi + twoTouch.snapshot.offset)) : baseMidi;
   if (midi == null) { toast('운지를 확인하세요'); return; }
   const unlocking = audio.unlock();
-  if (playing || officialPlaying) stop();
+  if (playing) stop();
   clearFingerInput();
   const token = { el, midi, voice: null, ready: false, record };
   holds.set(key, token);
@@ -255,7 +250,7 @@ function refreshFingerSound() {
   else sound();
 }
 function beginFinger(pointerId, hole) {
-  if (playing || officialPlaying || holds.size) stop();
+  if (playing || holds.size) stop();
   fingerReady = audio.unlock().catch(error => { toast(error.message); return null; });
   if (inputMode === 'direct') fingers.press(pointerId, hole);
   else {
@@ -293,15 +288,6 @@ function showPlaybackNote(song, index) {
   document.querySelector(`[data-song="${song.id}"]`)?.querySelectorAll('.mini-note')[index]?.classList.add('current');
   if (selected?.id === song.id) $('#practice-sequence').children[index]?.querySelector('.mini-note').classList.add('current');
 }
-function syncMediaNotes() {
-  if (!officialPlaying || !mediaSong) return;
-  const index = noteIndexAt(mediaSong.id, media.currentTime);
-  if (index !== mediaIndex) { mediaIndex = index; showPlaybackNote(mediaSong, index); }
-}
-function animateMediaNotes() {
-  syncMediaNotes();
-  if (officialPlaying) mediaFrame = requestAnimationFrame(animateMediaNotes);
-}
 async function playSong(song) {
   if (!song) return;
   if (playing === song.id) { stop(); return; }
@@ -312,25 +298,15 @@ async function playSong(song) {
   updatePracticeProgress();
   updatePlaybackButtons();
   try {
-    if (song.officialAudio) {
-      mediaSong = song;
-      mediaIndex = -1;
-      media.src = song.officialAudio;
-      media.volume = volume;
-      media.playbackRate = bpm / 100;
-      media.preservesPitch = true;
-      officialPlaying = true;
-      await media.play();
-      if (generation !== playGeneration) { if (!officialPlaying) media.pause(); return; }
-      animateMediaNotes();
-    } else {
-      await audio.play(song.notes.map(id => ({ midi: NOTES[id].midi + octave, beats: 1 })), {
-        bpm,
-        onNote(index) { if (generation === playGeneration) showPlaybackNote(song, index); },
-        onEnd() { if (generation === playGeneration) stop(); },
-      });
-    }
-  } catch (error) { if (generation === playGeneration) { stop(); toast(song.officialAudio ? '연주 음원을 불러오지 못했습니다' : error.message); } }
+    const sequence = songPlaybackSequence(song, octave);
+    await audio.play(sequence, {
+      bpm,
+      onNote(index) {
+        if (generation === playGeneration) showPlaybackNote(song, sequence[index]?.noteIndex ?? -1);
+      },
+      onEnd() { if (generation === playGeneration) stop(); },
+    });
+  } catch (error) { if (generation === playGeneration) { stop(); toast(error.message); } }
 }
 function customSong() {
   return { id: 'custom', title: '허수아비의 노래', notes: [...custom] };
@@ -400,7 +376,7 @@ document.addEventListener('pointerdown', event => {
   event.preventDefault();
   el.setPointerCapture?.(event.pointerId);
   if (el.dataset.base || el.dataset.shift !== undefined) {
-    if (playing || officialPlaying || holds.size) stop();
+    if (playing || holds.size) stop();
     fingerReady = audio.unlock().catch(error => { toast(error.message); return null; });
     if (el.dataset.base) twoTouch.pressBase(event.pointerId, el.dataset.base);
     else twoTouch.pressModifier(event.pointerId, Number(el.dataset.shift));
@@ -434,7 +410,7 @@ document.addEventListener('click', event => {
   if (!el) return;
   if (el.dataset.audition) { auditionScale(Number(el.dataset.audition)); return; }
   if (event.detail === 0 && el.dataset.shift !== undefined) {
-    if (playing || officialPlaying || holds.size) stop();
+    if (playing || holds.size) stop();
     fingerReady = audio.unlock().catch(error => { toast(error.message); return null; });
     twoTouch.pressModifier('accessible-shift', Number(el.dataset.shift));
     refreshFingerSound();
@@ -492,23 +468,17 @@ $('#score-link').onclick = () => {
   $('#original-score-link').href = selected.officialScore;
   $('#score-dialog').showModal();
 };
-media.onended = () => { if (officialPlaying && media.ended) stop(); };
-media.ontimeupdate = syncMediaNotes;
-media.onerror = () => { if (officialPlaying && media.error) { stop(); toast('연주 음원을 불러오지 못했습니다'); } };
-
 $('#volume').value = volume * 100;
 $('#volume-value').textContent = `${Math.round(volume * 100)}%`;
-media.volume = volume;
 $('#volume').oninput = event => {
   volume = Number(event.target.value) / 100;
   audio.setVolume(volume);
-  media.volume = volume;
   $('#volume-value').textContent = `${Math.round(volume * 100)}%`;
   saveSettings();
 };
 $('#tempo').value = bpm;
 $('#tempo-value').textContent = `${bpm}%`;
-$('#tempo').oninput = event => { bpm = Number(event.target.value); $('#tempo-value').textContent = `${bpm}%`; media.playbackRate = bpm / 100; saveSettings(); };
+$('#tempo').oninput = event => { bpm = Number(event.target.value); $('#tempo-value').textContent = `${bpm}%`; saveSettings(); };
 $('#octave').value = octave;
 $('#octave').onchange = event => { stop(); octave = Number(event.target.value); saveSettings(); };
 $('#haptics').checked = haptics;
@@ -572,7 +542,7 @@ document.addEventListener('keydown', event => {
   if (el) { event.preventDefault(); startHold(el, `key${event.code}`); }
 });
 document.addEventListener('keyup', event => endHold(`key${event.code}`));
-window.addEventListener('blur', () => { if (!officialPlaying) stop(); });
+window.addEventListener('blur', stop);
 window.addEventListener('pagehide', stop);
 document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
 applyLayout();
@@ -581,4 +551,4 @@ renderInstrument();
 if (selectedId !== 'free' && selectedId !== 'custom' && !SONGS.some(song => song.id === selectedId)) selectedId = SONGS[0].id;
 selectSong(selectedId, false);
 
-window.ocarinaState = () => ({ mode, inputMode, rotationMode, twoTouch: twoTouch.snapshot, maxTouches, directContacts: fingers.snapshot.contactCount, tapContacts: tapContacts.size, fingerMidi, playing, officialPlaying, selected: selected?.id ?? null, progress, closed: [...closed], currentMidi: getMidiForHoles(closed), activeMidi: audio.lastMidi, contextState: audio.context?.state ?? 'not-started', activeVoice: audio.activeVoice, heldPointers: holds.size, custom: [...custom], volume, octave });
+window.ocarinaState = () => ({ mode, inputMode, rotationMode, twoTouch: twoTouch.snapshot, maxTouches, directContacts: fingers.snapshot.contactCount, tapContacts: tapContacts.size, fingerMidi, playing, selected: selected?.id ?? null, progress, closed: [...closed], currentMidi: getMidiForHoles(closed), activeMidi: audio.lastMidi, contextState: audio.context?.state ?? 'not-started', activeVoice: audio.activeVoice, heldPointers: holds.size, custom: [...custom], volume, octave });

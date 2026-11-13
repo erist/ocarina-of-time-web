@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { OcarinaAudio } from '../app/audio.js';
+import { NOTES, SONGS } from '../app/songs.js';
+import { songPlaybackSequence } from '../app/song-performance.js';
 
 class AudioParamStub {
   value = 0;
@@ -30,8 +32,13 @@ class AudioContextStub {
   state = 'suspended';
   destination = {};
   oscillators = [];
+  gains = [];
   resumeWaiters = [];
-  createGain() { return new AudioNodeStub(); }
+  createGain() {
+    const node = new AudioNodeStub();
+    this.gains.push(node);
+    return node;
+  }
   createPeriodicWave(real, imaginary) { return { real, imaginary }; }
   createOscillator() {
     const node = new AudioNodeStub();
@@ -160,6 +167,56 @@ test('beat spacing and rests use the audio clock, independently of UI timer deli
   assert.ok(oscillators[0].stoppedAt < oscillators[2].startedAt);
   audio.stopAll();
   assert.equal(await playing, false);
+});
+
+test('automatic notes use the same pitch, wave and vibrato as all five manual buttons', async () => {
+  const audio = await readyAudio();
+  for (const { midi } of Object.values(NOTES)) {
+    const manualOffset = audio.context.oscillators.length;
+    const manualGainOffset = audio.context.gains.length;
+    audio.noteOn(midi);
+    const [manualTone, manualVibrato] = audio.context.oscillators.slice(manualOffset);
+    const manualDepth = audio.context.gains[manualGainOffset + 1].gain.events.at(-1)[1];
+
+    const automaticOffset = audio.context.oscillators.length;
+    const automaticGainOffset = audio.context.gains.length;
+    const playing = audio.play([{ midi, beats: 0.5 }]);
+    await Promise.resolve();
+    const [automaticTone, automaticVibrato] = audio.context.oscillators.slice(automaticOffset);
+    const automaticDepth = audio.context.gains[automaticGainOffset + 1].gain.events.at(-1)[1];
+    assert.equal(automaticTone.frequency.value, manualTone.frequency.value, `pitch ${midi}`);
+    assert.equal(automaticTone.wave, manualTone.wave, `wave ${midi}`);
+    assert.equal(automaticVibrato.frequency.value, manualVibrato.frequency.value, `vibrato rate ${midi}`);
+    assert.equal(automaticDepth, manualDepth, `vibrato depth ${midi}`);
+    clock.tick(1000);
+    assert.equal(await playing, true);
+  }
+});
+
+test('song playback separates repeated notes and releases every final note without a long tail', async () => {
+  const songs = [...SONGS, { id: 'custom', notes: ['D', 'D', 'F', 'F', 'A', 'A', 'B', 'B'] }];
+  let repeatedPairs = 0;
+  for (const song of songs) {
+    const audio = await readyAudio();
+    const playing = audio.play(songPlaybackSequence(song), { bpm: 100 });
+    await Promise.resolve();
+    const tones = audio.context.oscillators.filter((_, index) => index % 2 === 0);
+    assert.equal(tones.length, song.notes.length, song.id);
+    for (let index = 1; index < tones.length; index++) {
+      assert.ok(tones[index - 1].stoppedAt < tones[index].startedAt, `${song.id}: notes must not overlap`);
+      if (song.notes[index - 1] === song.notes[index]) {
+        repeatedPairs++;
+        assert.notEqual(tones[index - 1], tones[index], `${song.id}: repeated notes need distinct attacks`);
+        assert.equal(tones[index - 1].frequency.value, tones[index].frequency.value);
+      }
+    }
+    const final = tones.at(-1);
+    assert.ok(final.stoppedAt - final.startedAt <= 0.35 + 1e-9, `${song.id}: short final note`);
+    clock.tick(10000);
+    assert.equal(await playing, true);
+    assert.equal(clock.jobs.size, 0, song.id);
+  }
+  assert.ok(repeatedPairs >= 6, 'exercise repeated pitches in Serenade, Nocturne, and the custom song');
 });
 
 test('normal completion reports each note and exactly one completion', async () => {

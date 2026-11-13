@@ -8,14 +8,14 @@ import { TouchFingering } from '../app/touch-fingering.js';
 import { TwoTouchInstrument } from '../app/two-touch.js';
 import { resolvePlayLayout } from '../app/play-layout.js';
 import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from '../app/control-mapping.js';
-import { noteIndexAt } from '../app/song-performance.js';
+import { songPlaybackSequence } from '../app/song-performance.js';
 
 // Exercise the real application event handlers with only browser presentation
 // and Web Audio replaced. A controlled clock makes contact races reproducible.
 const source = readFileSync(new URL('../app/app.js', import.meta.url), 'utf8')
   .replace(/^import .*;\n/gm, '');
 
-function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, height = 844 } = {}) {
+function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, height = 844, octave = 0, custom = [] } = {}) {
   let now = 0, nextTimer = 0, audio;
   const timers = new Map();
   const listeners = new Map();
@@ -65,7 +65,15 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
       return (this.activeVoice = ++this.serial);
     }
     noteOff(id) { if (id === this.activeVoice) this.activeVoice = null; }
-    stopAll() { this.activeVoice = null; }
+    play(sequence, options) {
+      this.playback = { sequence, options };
+      return new Promise(resolve => { this.settlePlayback = resolve; });
+    }
+    stopAll() {
+      this.activeVoice = null;
+      this.settlePlayback?.(false);
+      this.settlePlayback = null;
+    }
   }
   const window = {
     innerWidth: width, innerHeight: height,
@@ -77,12 +85,12 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
   vm.runInNewContext(source, {
     document, window, navigator: { maxTouchPoints: maxTouches },
     localStorage: {
-      getItem(key) { return key === 'hyrule-settings' ? JSON.stringify({ version: 2, mode }) : null; },
+      getItem(key) { return key === 'hyrule-settings' ? JSON.stringify({ version: 2, mode, octave }) : key === 'hyrule-scarecrow' ? JSON.stringify(custom) : null; },
       setItem() {}, removeItem() {},
     },
     OcarinaAudio: Audio, SONGS, NOTES, PLAYBACK_NOTE,
     HOLES, getFingering, getMidiForHoles, TouchFingering, TwoTouchInstrument, bodySvg: () => '',
-    resolvePlayLayout, GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi, noteIndexAt,
+    resolvePlayLayout, GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi, songPlaybackSequence,
     requestAnimationFrame: () => 1, cancelAnimationFrame() {},
     setTimeout(callback, delay) {
       const id = ++nextTimer;
@@ -99,6 +107,9 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
   };
   return {
     audio,
+    nodes,
+    playSong(id) { dispatch('click', { detail: 1, target: target({ play: id }) }); },
+    playCustom() { nodes.get('#custom-play').onclick(); },
     state: window.ocarinaState,
     flush,
     layoutStyles,
@@ -384,5 +395,51 @@ test('a viewport change clears held notes and avoids rotating native landscape t
   assert.equal(app.layoutStyles.get('--play-width'), '844px');
   app.moveTo(1, { base: 'X' }, 720, 180);
   await app.flush();
+  assert.equal(app.audio.activeVoice, null);
+});
+
+
+test('all song play buttons use button synthesis with canonical notes and selected octave', async () => {
+  const app = fixture({ mode: 'touch', octave: -12 });
+  for (const song of SONGS) {
+    app.playSong(song.id);
+    await app.flush();
+    assert.equal(app.state().playing, song.id);
+    assert.deepEqual(Array.from(app.audio.playback.sequence.filter(note => note.midi !== null), note => note.midi), song.notes.map(id => NOTES[id].midi - 12));
+    app.audio.playback.options.onEnd();
+    assert.equal(app.state().playing, null);
+  }
+  assert.equal(app.nodes.has('#official-audio'), false, 'playback must not access a recording');
+});
+
+test('custom playback uses the same short-note synthesis sequence', async () => {
+  const custom = ['D', 'D', 'F', 'A', 'B', 'd', 'A', 'D'];
+  const app = fixture({ mode: 'touch', custom });
+  app.playCustom();
+  await app.flush();
+  assert.equal(app.state().playing, 'custom');
+  assert.deepEqual(Array.from(app.audio.playback.sequence.filter(note => note.midi !== null), note => note.midi), custom.map(id => NOTES[id].midi));
+  app.keyStop();
+  assert.equal(app.state().playing, null);
+});
+
+test('manual takeover and newer songs ignore stale playback callbacks', async () => {
+  const app = fixture({ mode: 'touch' });
+  app.playSong('epona');
+  const oldCallbacks = app.audio.playback.options;
+  app.playSong('zelda');
+  oldCallbacks.onEnd();
+  assert.equal(app.state().playing, 'zelda');
+  const currentCallbacks = app.audio.playback.options;
+  app.base(1, 'L');
+  await app.flush();
+  assert.equal(app.state().playing, null);
+  const voice = app.audio.activeVoice;
+  assert.notEqual(voice, null);
+  currentCallbacks.onNote(0);
+  currentCallbacks.onEnd();
+  assert.equal(app.audio.activeVoice, voice);
+  assert.equal(app.state().fingerMidi, 74);
+  app.release(1);
   assert.equal(app.audio.activeVoice, null);
 });
