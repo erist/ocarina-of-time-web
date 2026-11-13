@@ -1,0 +1,4 @@
+{
+  "name": "ocarina-of-time-web", "version": "1.0.0", "private": true, "type": "module",
+  "scripts": { "dev": "node server.mjs", "test": "node --test tests/*.test.js", "build": "node build.mjs" }
+}
