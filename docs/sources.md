@@ -30,3 +30,9 @@
 이 결과는 앱 기본 음역 D5·F5·A5·B5·D6가 공식 공개 녹음에서도 쓰인다는 근거다. 녹음에는 작은 피치 변화와 배음이 있으므로 고정된 평균율 합성음과 파형이 같다는 뜻은 아니다.
 
 공개 녹음의 옥타브도 곡마다 같지 않았다. [젤다의 자장가](https://www.nintendo.com/jp/games/switch2/aa9ja/assets/img/melody/melody_zelda.mp3)의 주요 주기·스펙트럼은 약 B6(1998Hz)·D7(2357Hz)·A6(1784Hz), [에포나의 노래](https://www.nintendo.com/jp/games/switch2/aa9ja/assets/img/melody/melody_epona.mp3)는 약 D5(595Hz)·B4(496Hz)·A4(444Hz)로 추정되었다. 따라서 이 시청용 녹음 하나를 게임의 모든 자유 연주 버튼과 동일한 음원이라고 간주하거나, 합성 전체 곡을 일괄적으로 같은 옥타브로 옮기지 않았다. 실기 버튼 음원과의 완전한 음색·튜닝 일치, Switch 2의 인식 성공률은 여전히 미검증이다.
+
+
+## 멀티터치 입력
+
+- MDN Pointer events: https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events
+- 각 손가락의 pointerId, pointer capture, pointercancel과 touch-action:none을 사용합니다. navigator.maxTouchPoints로 브라우저가 알리는 지원 접점 수를 표시하며 실제 기기의 시스템 제스처·터치 성능까지 보장하지 않습니다.
