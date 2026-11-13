@@ -1,7 +1,7 @@
 import { OcarinaAudio } from './audio.js?v=20261113-two-touch';
 import { SONGS, NOTES, PLAYBACK_NOTE } from './songs.js?v=20261113-two-touch';
 import { HOLES, getFingering, getMidiForHoles } from './fingering.js';
-import { bodySvg } from './instrument-art.js';
+import { bodySvg } from './instrument-art.js?v=20261113-ceramic';
 import { TouchFingering } from './touch-fingering.js';
 import { TwoTouchInstrument } from './two-touch.js';
 import { resolvePlayLayout } from './play-layout.js';
@@ -55,14 +55,14 @@ function miniNote(id) {
   return `<span class="mini-note ${id === 'd' ? 'high' : ''}" title="${NOTES[id].pitch}">${noteLabel(id)}</span>`;
 }
 function keysHtml() {
-  return `<div class="quick-notes">${noteEntries.map(([id, n]) => `<button class="note-key" data-note="${id}" aria-label="${n.label} ${n.pitch} 연주, 키보드 ${n.key}" title="${n.pitch} · ${n.key}"><strong>${noteLabel(id)}</strong></button>`).join('')}<button class="note-key stop-key" data-stop aria-label="B 연주 종료" title="연주 종료">B</button></div>`;
+  return `<div class="quick-notes">${noteEntries.map(([id, n]) => `<button class="note-key" data-note="${id}" aria-label="${n.label} ${n.pitch} 연주, 키보드 ${n.key}" title="${n.pitch} · ${n.key}"><strong>${noteLabel(id)}</strong></button>`).join('')}</div>`;
 }
 function holeHtml(h) {
   return `<button class="hole ${h.small ? 'small' : ''} ${closed.has(h.id) ? 'closed' : ''}" data-hole="${h.id}" ${h.back ? '' : `style="left:${h.x}%;top:${h.y}%"`} aria-label="${h.back ? '뒷면 ' : ''}${h.id}번 구멍" aria-pressed="${closed.has(h.id)}"></button>`;
 }
 function twoTouchHtml() {
-  const positions = [[49, 41], [55, 76], [66, 68], [77, 60], [88, 64]];
-  return `<div class="ocarina-scene two-touch-scene">${bodySvg('touch')}${noteEntries.map(([id, n], i) => `<button class="hole controller-hole" data-base="${n.control}" data-note="${id}" style="left:${positions[i][0]}%;top:${positions[i][1]}%" aria-label="${n.control} ${n.label} ${n.pitch}" title="${n.label}">${n.control}</button>`).join('')}<div class="shift-rail" aria-label="반음 조절">${[-3,-2,-1,0,1,2,3].map(offset => `<button data-shift="${offset}" aria-label="${offset === 0 ? '기본 음높이' : `${Math.abs(offset)}반음 ${offset > 0 ? '높게' : '낮게'}`}" aria-pressed="false">${offset > 0 ? '+' : ''}${offset || '·'}</button>`).join('')}</div></div><div class="instrument-dock touch-dock"><output id="live-pitch" aria-live="off">—</output><button class="note-key stop-key" data-stop aria-label="B 연주 종료" title="연주 종료">B</button></div>`;
+  const positions = [[45, 52], [49, 79], [64, 73], [77, 64], [89, 74]];
+  return `<div class="ocarina-scene two-touch-scene">${bodySvg('touch')}${noteEntries.map(([id, n], i) => `<button class="hole controller-hole" data-base="${n.control}" data-note="${id}" style="left:${positions[i][0]}%;top:${positions[i][1]}%" aria-label="${n.control} ${n.label} ${n.pitch}" title="${n.label}">${n.control}</button>`).join('')}</div><div class="shift-rail" aria-label="반음 조절">${[-3,-2,-1,0,1,2,3].map(offset => `<button data-shift="${offset}" aria-label="${offset === 0 ? '기본 음높이' : `${Math.abs(offset)}반음 ${offset > 0 ? '높게' : '낮게'}`}" aria-pressed="false">${offset > 0 ? '+' : ''}${offset || '·'}</button>`).join('')}</div><div class="instrument-dock touch-dock"><output id="live-pitch" aria-live="off"></output></div>`;
 }
 function renderInstrument() {
   $('#main-instrument').innerHTML = mode === 'touch' ? twoTouchHtml() : mode === 'simple'
@@ -79,7 +79,7 @@ function renderInstrument() {
     button.setAttribute('aria-pressed', String(button.dataset.inputMode === inputMode));
   });
   $('#touch-capability').textContent = maxTouches ? `브라우저 보고 ${maxTouches}점 · 두 손가락 모드는 최대 2점 사용` : '마우스·키보드 사용 가능';
-  $('#input-hint').textContent = mode === 'touch' ? '한 손가락으로 기본음, 다른 손가락으로 −3…+3 반음 조절. 기본음에서 떼면 정지.' : mode === 'simple' ? 'L·R·A·Y·X 기본음 · B 정지' : inputMode === 'direct' ? '실제 운지 조합 · 기본 5음에 최대 9점 터치 필요' : '구멍을 탭해 상태 유지 · 누르는 동안 발음';
+  $('#input-hint').textContent = mode === 'touch' ? '한 손가락으로 기본음, 다른 손가락으로 −3…+3 반음 조절. 기본음에서 떼면 정지.' : mode === 'simple' ? 'L·R·A·Y·X 기본음 · 손을 떼면 정지' : inputMode === 'direct' ? '실제 운지 조합 · 기본 5음에 최대 9점 터치 필요' : '구멍을 탭해 상태 유지 · 누르는 동안 발음';
   $$('[data-mode]').forEach(button => {
     button.classList.toggle('active', button.dataset.mode === mode);
     button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
@@ -111,7 +111,7 @@ function highlight(midi) {
   $$('[data-note]').forEach(button => button.classList.toggle('sounding', NOTES[button.dataset.note].midi === midi));
   $('.instrument-stage').classList.toggle('sounding', midi !== null);
   const output = $('#live-pitch');
-  if (output) output.textContent = midi === null ? '—' : (gameNoteForMidi(midi)?.label || getFingering(midi)?.label || '');
+  if (output) output.textContent = midi === null ? '' : (gameNoteForMidi(midi)?.label || getFingering(midi)?.label || '');
 }
 function renderSongs() {
   const query = $('#song-search').value.trim().toLowerCase();
@@ -432,7 +432,6 @@ document.addEventListener('lostpointercapture', event => { releaseFinger(event.p
 document.addEventListener('click', event => {
   const el = event.target.closest('button');
   if (!el) return;
-  if (el.hasAttribute('data-stop')) { stop(); return; }
   if (el.dataset.audition) { auditionScale(Number(el.dataset.audition)); return; }
   if (event.detail === 0 && el.dataset.shift !== undefined) {
     if (playing || officialPlaying || holds.size) stop();

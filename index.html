@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#101d1a">
   <meta name="description" content="휴대폰으로 연주하는 시간의 오카리나. 12곡의 악보와 공식 굿즈 운지.">
+  <link rel="preload" as="image" href="./assets/ocarina-ceramic.png">
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="./manifest.webmanifest">
   <title>시간의 오카리나 · Hyrule Melody</title>
-  <link rel="stylesheet" href="./style.css?v=20261113-two-touch">
+  <link rel="stylesheet" href="./style.css?v=20261113-ceramic">
 </head>
 <body class="play-app">
   <div id="play-surface" class="play-surface">
@@ -60,7 +61,7 @@
     </section>
     <section class="menu-panel guide-panel" data-panel="fingering" aria-label="음계와 운지" hidden>
       <h3>게임 19음</h3>
-      <p class="guide-intro">기본음 버튼을 누른 채 다른 손가락으로 −3…+3을 조절하세요. 숫자 1칸은 반음입니다. B는 연주 종료입니다.</p>
+      <p class="guide-intro">기본음 버튼을 누른 채 다른 손가락으로 −3…+3을 조절하세요. 숫자 1칸은 반음입니다. 게임 컨트롤러와 키보드의 B는 연주 종료입니다.</p>
       <p class="guide-legend">● 닫음 · ○ 열림 · 아래 두 구멍은 뒷면</p>
       <div class="scale-scroll"><table class="scale-table"><thead><tr><th>음</th><th>두 손가락</th><th>컨트롤러</th><th>실물 운지</th><th><span class="sr-only">미리 듣기</span></th></tr></thead><tbody id="scale-guide"></tbody></table></div>
       <details class="extra-scale"><summary>실물·전자 오카리나 추가 6음</summary><div class="scale-scroll"><table class="scale-table"><thead><tr><th>음</th><th>실물 운지</th><th><span class="sr-only">미리 듣기</span></th></tr></thead><tbody id="extra-scale-guide"></tbody></table></div><p class="guide-intro">게임 범위 밖의 음입니다. 높은 파♯ 이상은 HORI 전자 악기의 확장 운지입니다.</p></details>
@@ -87,6 +88,6 @@
   </dialog>
   <div id="toast" role="status" class="toast"></div>
   <audio id="official-audio" preload="none"></audio>
-  <script type="module" src="./app.js?v=20261113-two-touch"></script>
+  <script type="module" src="./app.js?v=20261113-ceramic"></script>
 </body>
 </html>
