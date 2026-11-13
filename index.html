@@ -8,11 +8,11 @@
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="./manifest.webmanifest">
   <title>시간의 오카리나 · Hyrule Melody</title>
-  <link rel="stylesheet" href="./style.css?v=20261113-fullscreen-touch">
+  <link rel="stylesheet" href="./style.css?v=20261113-logo-icons">
 </head>
 <body class="play-app">
   <header class="play-header">
-    <span class="brand"><span class="crest" aria-hidden="true">✦</span> 시간의 오카리나</span>
+    <img class="brand" src="https://www.nintendo.com/kr/games/switch2/aa9ja/assets/img/top/mv_logo.webp" alt="젤다의 전설 시간의 오카리나" width="1590" height="1270" referrerpolicy="no-referrer" fetchpriority="high">
     <button class="icon-button" id="menu-button" aria-label="메뉴 열기" aria-haspopup="dialog" aria-controls="menu-dialog" aria-expanded="false"><span class="hamburger" aria-hidden="true"><i></i><i></i><i></i></span></button>
   </header>
   <main class="performance">
@@ -22,9 +22,9 @@
     <section class="selected-score" aria-labelledby="practice-title">
       <div class="selected-heading"><h1 id="practice-title">젤다의 자장가</h1><button class="icon-button" id="clear-selection" aria-label="악보 접고 자유 연주">✕</button></div>
       <div class="selected-actions">
-        <button class="primary-button" id="practice-play">▶ 재생</button>
-        <button class="secondary-button" id="official-play">♫ 원곡</button>
-        <button class="icon-button" id="practice-reset" aria-label="연습 다시 시작">↺</button>
+        <button class="icon-button" id="practice-play" aria-label="선택한 곡 재생" title="선택한 곡 재생">▶</button>
+        <button class="icon-button" id="official-play" aria-label="공식 원곡 듣기" title="공식 원곡 듣기">♫</button>
+        <button class="icon-button" id="practice-reset" aria-label="연습 다시 시작" title="연습 다시 시작">↺</button>
       </div>
       <div id="practice-sequence" class="practice-sequence" aria-label="연주 순서"></div>
       <span id="practice-progress-label" class="sr-only" role="status"></span>
@@ -36,19 +36,19 @@
   <dialog id="menu-dialog" class="menu-dialog" aria-labelledby="menu-title">
     <div class="modal-header"><h2 id="menu-title">메뉴</h2><button class="icon-button close-dialog" aria-label="메뉴 닫기">✕</button></div>
     <nav class="menu-tabs" aria-label="메뉴 항목">
-      <button data-menu-page="songs" aria-pressed="true">악보</button>
-      <button data-menu-page="settings" aria-pressed="false">설정</button>
-      <button data-menu-page="sources" aria-pressed="false">자료</button>
+      <button data-menu-page="songs" aria-pressed="true" aria-label="악보" title="악보"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13M9 9l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg></button>
+      <button data-menu-page="settings" aria-pressed="false" aria-label="설정" title="설정"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 3-.5 3-2 .9L5 5.5 2.5 9l2.2 2v2L2.5 15 5 18.5 7.5 17l2 .9.5 3h4l.5-3 2-.9 2.5 1.5 2.5-3.5-2.2-2v-2l2.2-2L19 5.5 16.5 7l-2-.9L14 3Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button data-menu-page="sources" aria-pressed="false" aria-label="자료" title="자료"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.1"/></svg></button>
     </nav>
     <section class="menu-panel" data-panel="songs" aria-label="악보 목록">
-      <div class="library-toolbar"><div class="filters" aria-label="곡 분류"><button class="active" data-filter="all" aria-pressed="true">전체 12</button><button data-filter="utility" aria-pressed="false">모험</button><button data-filter="warp" aria-pressed="false">워프</button></div><button class="text-button" id="free-play">자유 연주</button></div>
+      <div class="library-toolbar"><div class="filters" aria-label="곡 분류"><button class="active" data-filter="all" aria-pressed="true" aria-label="전체 12" title="전체 12"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button><button data-filter="utility" aria-pressed="false" aria-label="모험" title="모험"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5Z"/></svg></button><button data-filter="warp" aria-pressed="false" aria-label="워프" title="워프"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5Z"/></svg></button></div><button class="text-button" id="free-play" aria-label="자유 연주" title="자유 연주"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 19V7l10-3v12M7 11l10-3"/><ellipse cx="4" cy="19" rx="3" ry="2"/><ellipse cx="14" cy="16" rx="3" ry="2"/></svg></button></div>
       <div class="search-wrap"><label for="song-search" class="sr-only">곡 검색</label><input id="song-search" type="search" placeholder="곡 검색" autocomplete="off"></div>
       <div id="song-list" class="song-list"></div><p id="empty-results" class="empty-results" hidden>검색 결과 없음</p>
       <button class="scarecrow-card" id="scarecrow-button"><span aria-hidden="true">♧</span><strong>허수아비의 노래</strong><span aria-hidden="true">＋</span></button>
     </section>
     <section class="menu-panel" data-panel="settings" aria-label="연주 설정" hidden>
-      <div class="instrument-modes" aria-label="연주 방식"><button data-mode="merch" aria-pressed="true">공식 굿즈 배열</button><button data-mode="simple" aria-pressed="false">간편 5음</button></div>
-      <div class="instrument-modes input-modes" aria-label="운지 입력"><button data-input-mode="direct" aria-pressed="false">직접 운지</button><button data-input-mode="tap" aria-pressed="true">탭 운지</button></div>
+      <div class="instrument-modes" aria-label="연주 방식"><button data-mode="merch" aria-pressed="true" aria-label="공식 굿즈 배열" title="공식 굿즈 배열"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 17c8-6 12-7 17-4 4 2 3 6-1 7-5 1-11-1-16-3Z M13 11l2-7 4 1-1 7"/><circle cx="10" cy="15" r=".7"/><circle cx="15" cy="17" r=".7"/></svg></button><button data-mode="simple" aria-pressed="false" aria-label="간편 5음" title="간편 5음"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6M8 6v12M12 3v18M16 6v12M20 9v6"/></svg></button></div>
+      <div class="instrument-modes input-modes" aria-label="운지 입력"><button data-input-mode="direct" aria-pressed="false" aria-label="직접 운지" title="직접 운지"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 13V7a1.5 1.5 0 0 1 3 0v5-8a1.5 1.5 0 0 1 3 0v8-6a1.5 1.5 0 0 1 3 0v7-4a1.5 1.5 0 0 1 3 0v7c0 4-2 6-6 6-3 0-4-1-6-4l-3-4a1.5 1.5 0 0 1 2-2Z"/></svg></button><button data-input-mode="tap" aria-pressed="true" aria-label="탭 운지" title="탭 운지"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14V8a2 2 0 0 1 4 0v5l3-1 3 3-2 6h-7l-5-6a1.5 1.5 0 0 1 2-2Z M6 7a6 6 0 0 1 12 0"/></svg></button></div>
       <p id="input-hint" class="input-hint"></p><p id="touch-capability" class="touch-capability"></p>
       <label class="setting-row">음량 <output id="volume-value">70%</output><input id="volume" type="range" min="0" max="100" value="70"></label>
       <label class="setting-row">연주 속도 <output id="tempo-value">100 BPM</output><input id="tempo" type="range" min="50" max="160" step="5" value="100"></label>
@@ -57,7 +57,8 @@
     </section>
     <section class="menu-panel source-copy" data-panel="sources" aria-label="자료 안내" hidden>
       <p>비공식 팬 프로젝트. 직접 연주음은 합성음입니다.</p>
-      <p>전체 악보와 원곡은 Nintendo 공식 서버에서 불러옵니다.</p>
+      <p>로고·전체 악보·원곡은 Nintendo 공식 서버에서 불러옵니다.</p>
+      <a href="https://www.nintendo.com/kr/games/switch2/aa9ja/index.html" target="_blank" rel="noopener noreferrer">Nintendo 공식 로고 출처 ↗</a>
       <a href="https://www.nintendo.com/jp/games/switch2/aa9ja/melody/index.html" target="_blank" rel="noopener noreferrer">Nintendo 공식 악보·음원 ↗</a>
       <a href="https://hori.jp/manual/nsx-261/" target="_blank" rel="noopener noreferrer">HORI 공식 운지표 ↗</a>
     </section>
@@ -67,15 +68,15 @@
     <div class="modal-header"><h2 id="custom-title">허수아비의 노래</h2><button class="icon-button close-dialog" aria-label="허수아비 노래 닫기">✕</button></div>
     <div id="custom-sequence" class="practice-sequence" aria-label="사용자 지정 8음"></div>
     <div id="custom-keys" class="custom-keys"></div>
-    <div class="practice-tools"><button id="custom-clear" class="secondary-button">초기화</button><button id="custom-play" class="secondary-button" disabled>▶ 재생</button><button id="custom-select" class="primary-button" disabled>선택</button></div>
+    <div class="practice-tools"><button id="custom-clear" class="icon-button" aria-label="허수아비 노래 초기화" title="허수아비 노래 초기화">↺</button><button id="custom-play" class="icon-button" aria-label="허수아비의 노래 재생" title="허수아비의 노래 재생" disabled>▶</button><button id="custom-select" class="icon-button" aria-label="허수아비 노래 선택" title="허수아비 노래 선택" disabled>✓</button></div>
   </dialog>
 
   <dialog id="score-dialog" class="score-dialog" aria-labelledby="expanded-title">
-    <div class="modal-header"><h2 id="expanded-title"></h2><a id="original-score-link" target="_blank" rel="noopener noreferrer">원본 ↗</a><button class="icon-button close-dialog" aria-label="확대 악보 닫기">✕</button></div>
+    <div class="modal-header"><h2 id="expanded-title"></h2><a id="original-score-link" class="icon-button" target="_blank" rel="noopener noreferrer" aria-label="악보 원본 열기" title="악보 원본 열기">↗</a><button class="icon-button close-dialog" aria-label="확대 악보 닫기">✕</button></div>
     <div class="expanded-score"><img id="expanded-score-image" width="1912" height="874" alt="" referrerpolicy="no-referrer"></div>
   </dialog>
   <div id="toast" role="status" class="toast"></div>
   <audio id="official-audio" preload="none"></audio>
-  <script type="module" src="./app.js?v=20261113-fullscreen-touch"></script>
+  <script type="module" src="./app.js?v=20261113-logo-icons"></script>
 </body>
 </html>

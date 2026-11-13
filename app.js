@@ -49,15 +49,15 @@ function miniNote(id) {
   return `<span class="mini-note ${id === 'd' ? 'high' : ''}" title="${NOTES[id].pitch}">${noteLabel(id)}</span>`;
 }
 function keysHtml() {
-  return `<div class="quick-notes">${noteEntries.map(([id, n]) => `<button class="note-key" data-note="${id}" aria-label="${n.label} ${n.pitch} 연주, 키보드 ${n.key}"><strong>${noteLabel(id)}</strong><small>${n.pitch}</small></button>`).join('')}</div>`;
+  return `<div class="quick-notes">${noteEntries.map(([id, n]) => `<button class="note-key" data-note="${id}" aria-label="${n.label} ${n.pitch} 연주, 키보드 ${n.key}" title="${n.pitch} · ${n.key}"><strong>${noteLabel(id)}</strong></button>`).join('')}</div>`;
 }
 function holeHtml(h) {
-  return `<button class="hole ${h.small ? 'small' : ''} ${closed.has(h.id) ? 'closed' : ''}" data-hole="${h.id}" ${h.back ? '' : `style="left:${h.x}%;top:${h.y}%"`} aria-label="${h.back ? '뒷면 ' : ''}${h.id}번 구멍" aria-pressed="${closed.has(h.id)}">${h.id}</button>`;
+  return `<button class="hole ${h.small ? 'small' : ''} ${closed.has(h.id) ? 'closed' : ''}" data-hole="${h.id}" ${h.back ? '' : `style="left:${h.x}%;top:${h.y}%"`} aria-label="${h.back ? '뒷면 ' : ''}${h.id}번 구멍" aria-pressed="${closed.has(h.id)}"></button>`;
 }
 function renderInstrument() {
   $('#main-instrument').innerHTML = mode === 'simple'
     ? `<div class="simple-scene">${bodySvg('simple', true)}${keysHtml()}</div>`
-    : `<div class="ocarina-scene">${bodySvg('merch')}${HOLES.filter(h => !h.back).map(holeHtml).join('')}</div><div class="instrument-dock"><div class="thumb-row"><span>뒷면</span>${HOLES.filter(h => h.back).map(holeHtml).join('')}</div>${keysHtml()}</div>`;
+    : `<div class="ocarina-scene">${bodySvg('merch')}${HOLES.filter(h => !h.back).map(holeHtml).join('')}</div><div class="instrument-dock"><div class="thumb-row">${HOLES.filter(h => h.back).map(holeHtml).join('')}</div>${keysHtml()}</div>`;
   document.body.dataset.input = inputMode;
   syncHoles();
   $$('[data-input-mode]').forEach(button => {
@@ -101,14 +101,19 @@ function updatePlaybackButtons() {
     card.classList.toggle('is-playing', active);
     const button = card.querySelector('.song-play');
     button.textContent = active ? '■' : '▶';
-    button.setAttribute('aria-label', `${SONGS.find(song => song.id === card.dataset.song).title} ${active ? '정지' : '재생'}`);
+    button.title = `${SONGS.find(song => song.id === card.dataset.song).title} ${active ? '정지' : '재생'}`;
+    button.setAttribute('aria-label', button.title);
   });
   const active = selected && playing === selected.id;
-  $('#practice-play').textContent = active ? '■ 정지' : '▶ 재생';
-  $('#practice-play').setAttribute('aria-label', active ? '선택한 곡 정지' : '선택한 곡 재생');
-  $('#official-play').textContent = officialPlaying ? '■ 정지' : '♫ 원곡';
-  $('#official-play').setAttribute('aria-label', officialPlaying ? '원곡 정지' : '공식 원곡 듣기');
-  $('#custom-play').textContent = playing === 'custom' ? '■ 정지' : '▶ 재생';
+  $('#practice-play').textContent = active ? '■' : '▶';
+  $('#practice-play').title = active ? '선택한 곡 정지' : '선택한 곡 재생';
+  $('#practice-play').setAttribute('aria-label', $('#practice-play').title);
+  $('#official-play').textContent = officialPlaying ? '■' : '♫';
+  $('#official-play').title = officialPlaying ? '원곡 정지' : '공식 원곡 듣기';
+  $('#official-play').setAttribute('aria-label', $('#official-play').title);
+  $('#custom-play').textContent = playing === 'custom' ? '■' : '▶';
+  $('#custom-play').title = playing === 'custom' ? '허수아비 노래 정지' : '허수아비 노래 재생';
+  $('#custom-play').setAttribute('aria-label', $('#custom-play').title);
 }
 function stop() {
   playGeneration++;
