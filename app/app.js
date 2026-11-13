@@ -1,8 +1,12 @@
-import { OcarinaAudio } from './audio.js';
-import { SONGS, NOTES, PLAYBACK_NOTE } from './songs.js';
+import { OcarinaAudio } from './audio.js?v=20261113-two-touch';
+import { SONGS, NOTES, PLAYBACK_NOTE } from './songs.js?v=20261113-two-touch';
 import { HOLES, getFingering, getMidiForHoles } from './fingering.js';
 import { bodySvg } from './instrument-art.js';
 import { TouchFingering } from './touch-fingering.js';
+import { TwoTouchInstrument } from './two-touch.js';
+import { resolvePlayLayout } from './play-layout.js';
+import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from './control-mapping.js';
+import { noteIndexAt } from './song-performance.js';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -11,12 +15,13 @@ const media = $('#official-audio');
 const noteEntries = Object.entries(NOTES);
 const holds = new Map();
 const fingers = new TouchFingering();
+const twoTouch = new TwoTouchInstrument();
 const tapContacts = new Map();
 const maxTouches = Number(navigator.maxTouchPoints) || 0;
 let inputMode = maxTouches >= 9 ? 'direct' : 'tap';
 let fingerVoice = null, fingerMidi = null, fingerTimer, fingerGeneration = 0, fingerReady = null;
 const symbols = ['♧', '◷', '☼', 'ϟ', '♞', '❧', '❧', '♨', '♧', '◇', '☾', '✦'];
-let mode = 'merch', filter = 'all', selected = null, playing = null, officialPlaying = false;
+let mode = 'touch', rotationMode = 'right', mediaFrame = null, mediaSong = null, mediaIndex = -1, filter = 'all', selected = null, playing = null, officialPlaying = false;
 let closed = new Set(getFingering(74).closed), progress = 0;
 let volume = 0.7, bpm = 100, octave = 0, haptics = true, custom = [];
 let toastTimer, practiceTimer, previewTimer, playGeneration = 0;
@@ -28,7 +33,8 @@ try {
   octave = [-12, 0, 12].includes(saved.octave) ? saved.octave : 0;
   haptics = saved.haptics !== false;
   if (['direct', 'tap'].includes(saved.inputMode)) inputMode = saved.inputMode;
-  mode = saved.mode === 'simple' ? 'simple' : 'merch';
+  mode = saved.version === 2 && ['touch', 'merch', 'simple'].includes(saved.mode) ? saved.mode : 'touch';
+  rotationMode = ['auto', 'left', 'right'].includes(saved.rotationMode) ? saved.rotationMode : 'right';
   const notes = JSON.parse(localStorage.getItem('hyrule-scarecrow') || '[]');
   if (Array.isArray(notes)) custom = notes.filter(n => Object.hasOwn(NOTES, n)).slice(0, 8);
   selectedId = localStorage.getItem('hyrule-selected-song') || selectedId;
@@ -36,7 +42,7 @@ try {
 audio.setVolume(volume);
 
 function saveSettings() {
-  try { localStorage.setItem('hyrule-settings', JSON.stringify({ volume, bpm, octave, haptics, mode, inputMode })); } catch {}
+  try { localStorage.setItem('hyrule-settings', JSON.stringify({ version: 2, volume, bpm, octave, haptics, mode, inputMode, rotationMode })); } catch {}
 }
 function toast(message) {
   $('#toast').textContent = message;
@@ -44,34 +50,52 @@ function toast(message) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => $('#toast').classList.remove('visible'), 2200);
 }
-function noteLabel(id) { return id === 'd' ? '레↑' : NOTES[id].label; }
+function noteLabel(id) { return controlForNote(id); }
 function miniNote(id) {
   return `<span class="mini-note ${id === 'd' ? 'high' : ''}" title="${NOTES[id].pitch}">${noteLabel(id)}</span>`;
 }
 function keysHtml() {
-  return `<div class="quick-notes">${noteEntries.map(([id, n]) => `<button class="note-key" data-note="${id}" aria-label="${n.label} ${n.pitch} 연주, 키보드 ${n.key}" title="${n.pitch} · ${n.key}"><strong>${noteLabel(id)}</strong></button>`).join('')}</div>`;
+  return `<div class="quick-notes">${noteEntries.map(([id, n]) => `<button class="note-key" data-note="${id}" aria-label="${n.label} ${n.pitch} 연주, 키보드 ${n.key}" title="${n.pitch} · ${n.key}"><strong>${noteLabel(id)}</strong></button>`).join('')}<button class="note-key stop-key" data-stop aria-label="B 연주 종료" title="연주 종료">B</button></div>`;
 }
 function holeHtml(h) {
   return `<button class="hole ${h.small ? 'small' : ''} ${closed.has(h.id) ? 'closed' : ''}" data-hole="${h.id}" ${h.back ? '' : `style="left:${h.x}%;top:${h.y}%"`} aria-label="${h.back ? '뒷면 ' : ''}${h.id}번 구멍" aria-pressed="${closed.has(h.id)}"></button>`;
 }
+function twoTouchHtml() {
+  const positions = [[49, 41], [55, 76], [66, 68], [77, 60], [88, 64]];
+  return `<div class="ocarina-scene two-touch-scene">${bodySvg('touch')}${noteEntries.map(([id, n], i) => `<button class="hole controller-hole" data-base="${n.control}" data-note="${id}" style="left:${positions[i][0]}%;top:${positions[i][1]}%" aria-label="${n.control} ${n.label} ${n.pitch}" title="${n.label}">${n.control}</button>`).join('')}<div class="shift-rail" aria-label="반음 조절">${[-3,-2,-1,0,1,2,3].map(offset => `<button data-shift="${offset}" aria-label="${offset === 0 ? '기본 음높이' : `${Math.abs(offset)}반음 ${offset > 0 ? '높게' : '낮게'}`}" aria-pressed="false">${offset > 0 ? '+' : ''}${offset || '·'}</button>`).join('')}</div></div><div class="instrument-dock touch-dock"><output id="live-pitch" aria-live="off">—</output><button class="note-key stop-key" data-stop aria-label="B 연주 종료" title="연주 종료">B</button></div>`;
+}
 function renderInstrument() {
-  $('#main-instrument').innerHTML = mode === 'simple'
+  $('#main-instrument').innerHTML = mode === 'touch' ? twoTouchHtml() : mode === 'simple'
     ? `<div class="simple-scene">${bodySvg('simple', true)}${keysHtml()}</div>`
     : `<div class="ocarina-scene">${bodySvg('merch')}${HOLES.filter(h => !h.back).map(holeHtml).join('')}</div><div class="instrument-dock"><div class="thumb-row">${HOLES.filter(h => h.back).map(holeHtml).join('')}</div>${keysHtml()}</div>`;
   document.body.dataset.input = inputMode;
+  document.body.dataset.mode = mode;
+  $('#instrument-mode').value = mode;
+  $('#input-mode').value = inputMode;
+  $('#advanced-input').hidden = mode !== 'merch';
   syncHoles();
   $$('[data-input-mode]').forEach(button => {
     button.classList.toggle('active', button.dataset.inputMode === inputMode);
     button.setAttribute('aria-pressed', String(button.dataset.inputMode === inputMode));
   });
-  $('#touch-capability').textContent = maxTouches ? `이 기기 ${maxTouches}점 · 공식 기본 5음 운지에는 최대 9점 필요` : '터치 미지원 기기 · 마우스는 탭 운지 사용';
-  $('#input-hint').textContent = inputMode === 'direct' ? '손가락을 댄 구멍만 닫힘 · 떼면 열림' : '터치로 열고 닫기 · 누르는 동안 소리';
+  $('#touch-capability').textContent = maxTouches ? `브라우저 보고 ${maxTouches}점 · 두 손가락 모드는 최대 2점 사용` : '마우스·키보드 사용 가능';
+  $('#input-hint').textContent = mode === 'touch' ? '한 손가락으로 기본음, 다른 손가락으로 −3…+3 반음 조절. 기본음에서 떼면 정지.' : mode === 'simple' ? 'L·R·A·Y·X 기본음 · B 정지' : inputMode === 'direct' ? '실제 운지 조합 · 기본 5음에 최대 9점 터치 필요' : '구멍을 탭해 상태 유지 · 누르는 동안 발음';
   $$('[data-mode]').forEach(button => {
     button.classList.toggle('active', button.dataset.mode === mode);
     button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
   });
 }
 function syncHoles() {
+  const touch = twoTouch.snapshot;
+  $$('[data-base]').forEach(button => {
+    button.classList.toggle('closed', button.dataset.base === touch.control);
+    button.setAttribute('aria-pressed', String(button.dataset.base === touch.control));
+  });
+  $$('[data-shift]').forEach(button => {
+    const active = Number(button.dataset.shift) === touch.offset;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
   $$('[data-hole]').forEach(button => {
     const isClosed = closed.has(Number(button.dataset.hole));
     button.classList.toggle('closed', isClosed);
@@ -86,6 +110,8 @@ function setFingering(midi) {
 function highlight(midi) {
   $$('[data-note]').forEach(button => button.classList.toggle('sounding', NOTES[button.dataset.note].midi === midi));
   $('.instrument-stage').classList.toggle('sounding', midi !== null);
+  const output = $('#live-pitch');
+  if (output) output.textContent = midi === null ? '—' : (gameNoteForMidi(midi)?.label || getFingering(midi)?.label || '');
 }
 function renderSongs() {
   const query = $('#song-search').value.trim().toLowerCase();
@@ -108,9 +134,6 @@ function updatePlaybackButtons() {
   $('#practice-play').textContent = active ? '■' : '▶';
   $('#practice-play').title = active ? '선택한 곡 정지' : '선택한 곡 재생';
   $('#practice-play').setAttribute('aria-label', $('#practice-play').title);
-  $('#official-play').textContent = officialPlaying ? '■' : '♫';
-  $('#official-play').title = officialPlaying ? '원곡 정지' : '공식 원곡 듣기';
-  $('#official-play').setAttribute('aria-label', $('#official-play').title);
   $('#custom-play').textContent = playing === 'custom' ? '■' : '▶';
   $('#custom-play').title = playing === 'custom' ? '허수아비 노래 정지' : '허수아비 노래 재생';
   $('#custom-play').setAttribute('aria-label', $('#custom-play').title);
@@ -121,6 +144,8 @@ function stop() {
   clearFingerInput();
   audio.stopAll();
   media.pause();
+  cancelAnimationFrame(mediaFrame);
+  mediaFrame = null; mediaSong = null; mediaIndex = -1;
   officialPlaying = false;
   playing = null;
   holds.clear();
@@ -153,7 +178,8 @@ function recordNote(midi) {
   if (progress === selected.notes.length) practiceTimer = setTimeout(resetProgress, 1800);
 }
 async function startHold(el, key, { record = true } = {}) {
-  const midi = el.hasAttribute('data-blow') ? getMidiForHoles(closed) : NOTES[el.dataset.note]?.midi;
+  const baseMidi = el.hasAttribute('data-blow') ? getMidiForHoles(closed) : NOTES[el.dataset.note]?.midi;
+  const midi = baseMidi == null ? null : mode === 'touch' ? Math.max(71, Math.min(89, baseMidi + twoTouch.snapshot.offset)) : baseMidi;
   if (midi == null) { toast('운지를 확인하세요'); return; }
   const unlocking = audio.unlock();
   if (playing || officialPlaying) stop();
@@ -199,18 +225,20 @@ function clearFingerInput() {
   clearTimeout(fingerTimer);
   stopFingerVoice();
   fingers.clear();
+  twoTouch.clear();
   tapContacts.clear();
-  if (inputMode === 'direct') closed.clear();
+  if (mode === 'touch' || inputMode === 'direct') closed.clear();
   syncHoles();
 }
 function refreshFingerSound() {
   const generation = ++fingerGeneration;
   clearTimeout(fingerTimer);
-  const snapshot = fingers.snapshot;
-  if (inputMode === 'direct') closed = new Set(snapshot.closed);
+  const snapshot = mode === 'touch' ? twoTouch.snapshot : fingers.snapshot;
+  if (mode === 'touch') closed = new Set(getFingering(snapshot.midi)?.closed || []);
+  else if (inputMode === 'direct') closed = new Set(snapshot.closed);
   syncHoles();
-  const contacts = inputMode === 'direct' ? snapshot.contactCount : tapContacts.size;
-  const midi = inputMode === 'direct' ? snapshot.midi : getMidiForHoles(closed);
+  const contacts = mode === 'touch' || inputMode === 'direct' ? snapshot.contactCount : tapContacts.size;
+  const midi = mode === 'touch' || inputMode === 'direct' ? snapshot.midi : getMidiForHoles(closed);
   if (!contacts || midi === null) { stopFingerVoice(); return; }
   if (fingerMidi === midi && audio.activeVoice === fingerVoice) return;
   stopFingerVoice();
@@ -223,7 +251,7 @@ function refreshFingerSound() {
     recordNote(midi);
   };
   // Let a held chord settle; a latched tap can sound immediately.
-  if (inputMode === 'direct') fingerTimer = setTimeout(sound, 35);
+  if (mode !== 'touch' && inputMode === 'direct') fingerTimer = setTimeout(sound, 35);
   else sound();
 }
 function beginFinger(pointerId, hole) {
@@ -238,7 +266,8 @@ function beginFinger(pointerId, hole) {
   refreshFingerSound();
 }
 function releaseFinger(pointerId) {
-  if (!fingers.pointers.has(pointerId) && !tapContacts.has(pointerId)) return;
+  if (!twoTouch.pointers.has(pointerId) && !fingers.pointers.has(pointerId) && !tapContacts.has(pointerId)) return;
+  twoTouch.release(pointerId);
   fingers.release(pointerId);
   tapContacts.delete(pointerId);
   refreshFingerSound();
@@ -255,6 +284,24 @@ function accessibleHole(hole) {
     tapNote({ hasAttribute: () => true }, 'preview');
   }
 }
+function showPlaybackNote(song, index) {
+  $$('.mini-note.current').forEach(el => el.classList.remove('current'));
+  if (index < 0) { highlight(null); return; }
+  const midi = NOTES[song.notes[index]].midi;
+  setFingering(midi);
+  highlight(midi);
+  document.querySelector(`[data-song="${song.id}"]`)?.querySelectorAll('.mini-note')[index]?.classList.add('current');
+  if (selected?.id === song.id) $('#practice-sequence').children[index]?.querySelector('.mini-note').classList.add('current');
+}
+function syncMediaNotes() {
+  if (!officialPlaying || !mediaSong) return;
+  const index = noteIndexAt(mediaSong.id, media.currentTime);
+  if (index !== mediaIndex) { mediaIndex = index; showPlaybackNote(mediaSong, index); }
+}
+function animateMediaNotes() {
+  syncMediaNotes();
+  if (officialPlaying) mediaFrame = requestAnimationFrame(animateMediaNotes);
+}
 async function playSong(song) {
   if (!song) return;
   if (playing === song.id) { stop(); return; }
@@ -265,27 +312,25 @@ async function playSong(song) {
   updatePracticeProgress();
   updatePlaybackButtons();
   try {
-    await audio.play(song.notes.map((id, i) => ({ midi: NOTES[id].midi + octave, beats: song.beats?.[i] || 1 })), {
-      bpm,
-      onNote(index) {
-        if (generation !== playGeneration) return;
-        $$('.mini-note.current').forEach(el => el.classList.remove('current'));
-        if (index < 0) { highlight(null); return; }
-        const midi = NOTES[song.notes[index]].midi;
-        setFingering(midi);
-        highlight(midi);
-        document.querySelector(`[data-song="${song.id}"]`)?.querySelectorAll('.mini-note')[index]?.classList.add('current');
-        if (selected?.id === song.id) $('#practice-sequence').children[index]?.querySelector('.mini-note').classList.add('current');
-      },
-      onEnd() {
-        if (generation !== playGeneration) return;
-        playing = null;
-        if (inputMode === 'direct') { closed.clear(); syncHoles(); }
-        updatePlaybackButtons();
-        updatePracticeProgress();
-      },
-    });
-  } catch (error) { if (generation === playGeneration) { stop(); toast(error.message); } }
+    if (song.officialAudio) {
+      mediaSong = song;
+      mediaIndex = -1;
+      media.src = song.officialAudio;
+      media.volume = volume;
+      media.playbackRate = bpm / 100;
+      media.preservesPitch = true;
+      officialPlaying = true;
+      await media.play();
+      if (generation !== playGeneration) { if (!officialPlaying) media.pause(); return; }
+      animateMediaNotes();
+    } else {
+      await audio.play(song.notes.map(id => ({ midi: NOTES[id].midi + octave, beats: 1 })), {
+        bpm,
+        onNote(index) { if (generation === playGeneration) showPlaybackNote(song, index); },
+        onEnd() { if (generation === playGeneration) stop(); },
+      });
+    }
+  } catch (error) { if (generation === playGeneration) { stop(); toast(song.officialAudio ? '연주 음원을 불러오지 못했습니다' : error.message); } }
 }
 function customSong() {
   return { id: 'custom', title: '허수아비의 노래', notes: [...custom] };
@@ -303,7 +348,6 @@ function selectSong(id, persist = true) {
   $('#practice-sequence').innerHTML = selected ? selected.notes.map((note, i) => `<span class="practice-step">${miniNote(note)}<small>${i + 1}</small></span>`).join('') : '';
   $('#score-viewer').replaceChildren();
   $('#score-link').hidden = !selected?.officialScore;
-  $('#official-play').hidden = !selected?.officialAudio;
   if (selected?.officialScore) {
     const img = document.createElement('img');
     img.width = 1912;
@@ -327,6 +371,7 @@ function selectSong(id, persist = true) {
   if (persist) try { localStorage.setItem('hyrule-selected-song', selectedId); } catch {}
 }
 function setMenuPage(page) {
+  $('#menu-dialog').scrollTop = 0;
   $$('[data-menu-page]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.menuPage === page)));
   $$('[data-panel]').forEach(panel => { panel.hidden = panel.dataset.panel !== page; });
 }
@@ -350,14 +395,27 @@ function renderCustom() {
 
 // Every finger has independent ownership; all cancel paths release sound.
 document.addEventListener('pointerdown', event => {
-  const el = event.target.closest('[data-hole], [data-note]');
+  const el = event.target.closest('[data-hole], [data-note], [data-shift]');
   if (!el || event.button !== 0) return;
   event.preventDefault();
   el.setPointerCapture?.(event.pointerId);
-  if (el.dataset.hole) beginFinger(event.pointerId, Number(el.dataset.hole));
+  if (el.dataset.base || el.dataset.shift !== undefined) {
+    if (playing || officialPlaying || holds.size) stop();
+    fingerReady = audio.unlock().catch(error => { toast(error.message); return null; });
+    if (el.dataset.base) twoTouch.pressBase(event.pointerId, el.dataset.base);
+    else twoTouch.pressModifier(event.pointerId, Number(el.dataset.shift));
+    refreshFingerSound();
+  } else if (el.dataset.hole) beginFinger(event.pointerId, Number(el.dataset.hole));
   else startHold(el, event.pointerId);
 });
 document.addEventListener('pointermove', event => {
+  if (twoTouch.pointers.has(event.pointerId)) {
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-base], [data-shift]');
+    const point = target?.dataset.base ? { control: target.dataset.base } : target?.dataset.shift !== undefined ? { offset: Number(target.dataset.shift) } : null;
+    twoTouch.move(event.pointerId, point);
+    refreshFingerSound();
+    return;
+  }
   if (inputMode !== 'direct' || !fingers.pointers.has(event.pointerId)) return;
   const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('#main-instrument [data-hole]');
   const hole = target ? Number(target.dataset.hole) : null;
@@ -367,13 +425,22 @@ document.addEventListener('pointermove', event => {
 });
 document.addEventListener('pointerup', event => { releaseFinger(event.pointerId); endHold(event.pointerId); });
 document.addEventListener('pointercancel', event => {
-  if (fingers.pointers.has(event.pointerId) || tapContacts.has(event.pointerId)) clearFingerInput();
+  if (twoTouch.pointers.has(event.pointerId) || fingers.pointers.has(event.pointerId) || tapContacts.has(event.pointerId)) clearFingerInput();
   endHold(event.pointerId);
 });
 document.addEventListener('lostpointercapture', event => { releaseFinger(event.pointerId); endHold(event.pointerId); });
 document.addEventListener('click', event => {
   const el = event.target.closest('button');
   if (!el) return;
+  if (el.hasAttribute('data-stop')) { stop(); return; }
+  if (el.dataset.audition) { auditionScale(Number(el.dataset.audition)); return; }
+  if (event.detail === 0 && el.dataset.shift !== undefined) {
+    if (playing || officialPlaying || holds.size) stop();
+    fingerReady = audio.unlock().catch(error => { toast(error.message); return null; });
+    twoTouch.pressModifier('accessible-shift', Number(el.dataset.shift));
+    refreshFingerSound();
+    return;
+  }
   if (event.detail === 0 && (el.dataset.note || el.hasAttribute('data-blow'))) { tapNote(el, 'accessible'); return; }
   if (el.dataset.hole) { if (event.detail === 0) accessibleHole(Number(el.dataset.hole)); return; }
   if (el.dataset.inputMode) {
@@ -426,20 +493,9 @@ $('#score-link').onclick = () => {
   $('#original-score-link').href = selected.officialScore;
   $('#score-dialog').showModal();
 };
-$('#official-play').onclick = async () => {
-  if (officialPlaying) { stop(); return; }
-  stop();
-  if (!selected?.officialAudio) return;
-  const generation = playGeneration;
-  media.src = selected.officialAudio;
-  media.volume = volume;
-  officialPlaying = true;
-  updatePlaybackButtons();
-  try { await media.play(); if (generation !== playGeneration) media.pause(); }
-  catch { if (generation === playGeneration) { officialPlaying = false; updatePlaybackButtons(); toast('원곡을 불러오지 못했습니다'); } }
-};
-media.onended = () => { officialPlaying = false; updatePlaybackButtons(); };
-media.onerror = () => { if (officialPlaying) { officialPlaying = false; updatePlaybackButtons(); toast('원곡을 불러오지 못했습니다'); } };
+media.onended = () => { if (officialPlaying && media.ended) stop(); };
+media.ontimeupdate = syncMediaNotes;
+media.onerror = () => { if (officialPlaying && media.error) { stop(); toast('연주 음원을 불러오지 못했습니다'); } };
 
 $('#volume').value = volume * 100;
 $('#volume-value').textContent = `${Math.round(volume * 100)}%`;
@@ -452,8 +508,8 @@ $('#volume').oninput = event => {
   saveSettings();
 };
 $('#tempo').value = bpm;
-$('#tempo-value').textContent = `${bpm} BPM`;
-$('#tempo').oninput = event => { bpm = Number(event.target.value); $('#tempo-value').textContent = `${bpm} BPM`; saveSettings(); };
+$('#tempo-value').textContent = `${bpm}%`;
+$('#tempo').oninput = event => { bpm = Number(event.target.value); $('#tempo-value').textContent = `${bpm}%`; media.playbackRate = bpm / 100; saveSettings(); };
 $('#octave').value = octave;
 $('#octave').onchange = event => { stop(); octave = Number(event.target.value); saveSettings(); };
 $('#haptics').checked = haptics;
@@ -481,9 +537,37 @@ $('#custom-clear').onclick = () => {
 $('#custom-play').onclick = () => playSong(customSong());
 $('#custom-select').onclick = () => { if (custom.length === 8) { closeDialog($('#scarecrow-dialog')); selectSong('custom'); } };
 
+function applyLayout() {
+  const layout = resolvePlayLayout(window.innerWidth, window.innerHeight, rotationMode);
+  const root = document.documentElement;
+  root.style.setProperty('--play-width', `${layout.width}px`);
+  root.style.setProperty('--play-height', `${layout.height}px`);
+  root.style.setProperty('--play-angle', `${layout.rotation}deg`);
+  document.body.dataset.layout = layout.landscape ? 'landscape' : 'portrait';
+  document.body.dataset.rotated = String(layout.rotation !== 0);
+  document.body.dataset.compact = String(layout.width <= 740);
+  $('#rotation-mode').value = rotationMode;
+}
+$('#rotation-mode').onchange = event => { stop(); rotationMode = event.target.value; applyLayout(); saveSettings(); };
+$('#instrument-mode').onchange = event => { stop(); mode = event.target.value; renderInstrument(); saveSettings(); };
+$('#input-mode').onchange = event => { stop(); inputMode = event.target.value; renderInstrument(); saveSettings(); };
+window.addEventListener('resize', () => { stop(); applyLayout(); });
+function fingeringDiagram(item) {
+  return `<svg class="fingering-diagram" viewBox="0 0 160 94" role="img" aria-label="닫는 구멍 ${item.closed.length ? item.closed.join(', ') : '없음'}"><path d="M5 61Q80 4 151 39Q168 70 128 76Q55 84 5 61Z" fill="#203e47" stroke="#7b9b9e"/>${HOLES.map(h => `<circle cx="${h.x*1.5+3}" cy="${h.back ? 87 : h.y*.8}" r="${h.small ? 3 : 4}" fill="${item.closed.includes(h.id) ? '#d8c791' : '#0a1d23'}" stroke="#9eaa97" stroke-width=".6"/>`).join('')}</svg>`;
+}
+function renderGuide() {
+  $('#scale-guide').innerHTML = GAME_SCALE.map(item => `<tr><th scope="row">${item.label}</th><td><b>${item.base}</b>${item.offset ? ` ${item.offset > 0 ? '+' : '−'}${Math.abs(item.offset)}` : ''}</td><td>${item.controllerParts.join(' + ')}</td><td>${fingeringDiagram(item)}</td><td><button class="icon-button" data-audition="${item.midi}" aria-label="${item.label} 들어보기">▶</button></td></tr>`).join('');
+  $('#extra-scale-guide').innerHTML = SCALE_GUIDE.filter(item => !item.game).map(item => `<tr><th scope="row">${item.label}</th><td>${fingeringDiagram(item)}</td><td><button class="icon-button" data-audition="${item.midi}" aria-label="${item.label} 들어보기">▶</button></td></tr>`).join('');
+}
+async function auditionScale(midi) {
+  stop();
+  try { await audio.play([{ midi: midi + octave, beats: 1 }], { bpm: 100 }); }
+  catch (error) { toast(error.message); }
+}
 document.addEventListener('keydown', event => {
   if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.target.closest('input,select,textarea') || $$('dialog[open]').length) return;
-  const note = noteEntries.find(([, value]) => value.key === event.key)?.[0];
+  if (event.key.toLowerCase() === 'b') { event.preventDefault(); stop(); return; }
+  const note = noteEntries.find(([, value]) => value.key === event.key || value.control.toLowerCase() === event.key.toLowerCase())?.[0];
   let el = note ? document.querySelector(`#main-instrument [data-note="${note}"]`) : null;
   if (!el && [' ', 'Enter'].includes(event.key) && event.target.matches('[data-note],[data-blow]')) el = event.target;
   if (el) { event.preventDefault(); startHold(el, `key${event.code}`); }
@@ -492,8 +576,10 @@ document.addEventListener('keyup', event => endHold(`key${event.code}`));
 window.addEventListener('blur', () => { if (!officialPlaying) stop(); });
 window.addEventListener('pagehide', stop);
 document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+applyLayout();
+renderGuide();
 renderInstrument();
 if (selectedId !== 'free' && selectedId !== 'custom' && !SONGS.some(song => song.id === selectedId)) selectedId = SONGS[0].id;
 selectSong(selectedId, false);
 
-window.ocarinaState = () => ({ mode, inputMode, maxTouches, directContacts: fingers.snapshot.contactCount, tapContacts: tapContacts.size, fingerMidi, playing, officialPlaying, selected: selected?.id ?? null, progress, closed: [...closed], currentMidi: getMidiForHoles(closed), activeMidi: audio.lastMidi, contextState: audio.context?.state ?? 'not-started', activeVoice: audio.activeVoice, heldPointers: holds.size, custom: [...custom], volume, octave });
+window.ocarinaState = () => ({ mode, inputMode, rotationMode, twoTouch: twoTouch.snapshot, maxTouches, directContacts: fingers.snapshot.contactCount, tapContacts: tapContacts.size, fingerMidi, playing, officialPlaying, selected: selected?.id ?? null, progress, closed: [...closed], currentMidi: getMidiForHoles(closed), activeMidi: audio.lastMidi, contextState: audio.context?.state ?? 'not-started', activeVoice: audio.activeVoice, heldPointers: holds.size, custom: [...custom], volume, octave });

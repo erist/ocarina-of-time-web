@@ -1,4 +1,17 @@
-/** A small, entirely synthesized ocarina. No game recordings are bundled. */
+/**
+ * Live instrument synthesis. No game recordings are bundled.
+ * Harmonic magnitudes were measured from the public short-phrase recordings;
+ * their quiet, pitch-dependent overtones replace the former generic waveform.
+ * A synthesized live note is an approximation, not the original recording.
+ */
+const TONE_PROFILES = [
+  { midi: 74, harmonics: [1, .0045, .0022, .0024, .0004, .0002, .0001], vibratoHz: 2.35, vibratoCents: 2.3 },
+  { midi: 77, harmonics: [1, .0012, .0041, .0006, .0002, .0001, .0002], vibratoHz: 2.3, vibratoCents: 2.8 },
+  { midi: 81, harmonics: [1, .0025, .008, .0004, .0008, .0001, .0002], vibratoHz: 3.2, vibratoCents: 2.2 },
+  { midi: 83, harmonics: [1, .0021, .0201, .0005, .0013, .0001, .0002], vibratoHz: 8.9, vibratoCents: 1.7 },
+  { midi: 86, harmonics: [1, .0167, .0125, .0041, .0022, .0007, .0005], vibratoHz: 7.7, vibratoCents: 8.0 },
+];
+
 export class OcarinaAudio {
   constructor() {
     this.context = null;
@@ -21,11 +34,10 @@ export class OcarinaAudio {
     this.master = this.context.createGain();
     this.master.gain.value = this.volume * 0.42;
     this.master.connect(this.context.destination);
-    // The fundamental dominates, with quiet overtones resembling an air column.
-    this._wave = this.context.createPeriodicWave(
-      new Float32Array([0, 0, 0, 0, 0, 0]),
-      new Float32Array([0, 1, 0.075, 0.025, 0.009, 0.004]),
-    );
+    this._waves = new Map(TONE_PROFILES.map(profile => [profile.midi, this.context.createPeriodicWave(
+      new Float32Array(profile.harmonics.length + 1),
+      new Float32Array([0, ...profile.harmonics]),
+    )]));
   }
 
   /** Call directly from a tap/keyboard gesture, before awaiting other work. */
@@ -53,11 +65,13 @@ export class OcarinaAudio {
     const envelope = context.createGain();
     const vibrato = context.createOscillator();
     const vibratoDepth = context.createGain();
-    oscillator.setPeriodicWave(this._wave);
+    const profile = TONE_PROFILES.reduce((nearest, candidate) =>
+      Math.abs(candidate.midi - midi) < Math.abs(nearest.midi - midi) ? candidate : nearest);
+    oscillator.setPeriodicWave(this._waves.get(profile.midi));
     oscillator.frequency.value = 440 * 2 ** ((midi - 69) / 12);
-    vibrato.frequency.value = 5.1;
+    vibrato.frequency.value = profile.vibratoHz;
     vibratoDepth.gain.setValueAtTime(0, at);
-    vibratoDepth.gain.linearRampToValueAtTime(2.2, at + 0.2);
+    vibratoDepth.gain.linearRampToValueAtTime(profile.vibratoCents, at + 0.2);
     vibrato.connect(vibratoDepth);
     vibratoDepth.connect(oscillator.detune);
     oscillator.connect(envelope);

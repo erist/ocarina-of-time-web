@@ -18,7 +18,7 @@ export const HOLES = [
 
 // MIDI numbers represent sounding pitch (alto C register), not the octave-
 // transposed staff notation used in the merchandise's printed fingering chart.
-// Closed means touching a hole; the mouthpiece gates sound separately.
+// Closed means touching a hole; the selected input mode gates the live sound.
 export const FINGERINGS = [
   { midi: 69, label: '낮은 라 · A4', closed: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] },
   { midi: 70, label: '낮은 라♯ · A♯4', closed: [1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12] },

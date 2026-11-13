@@ -9,7 +9,7 @@
 
 ## 구현상 차이와 검증 한계
 
-- 휴대폰에서는 12개의 구멍을 동시에 누를 수 없으므로 구멍을 탭해 닫힘 상태를 유지하고 연주 버튼을 누르는 방식을 사용한다. 물리 제품의 버튼 위치·운지 조합을 참고하지만 물리 악기의 조작감을 그대로 재현한 것은 아니다.
+- 기본 모바일 모드는 최대 두 접점으로 게임 19음을 연주합니다. 공식 12구멍 모드는 별도로 선택하며, 직접 운지의 필요 접점 수는 기기 지원 범위에 영향을 받습니다. 두 손가락 방식은 실물 악기와 같은 손가락 배치라고 설명하지 않습니다.
 - 합성 음색은 오카리나 소리를 모사한다. Nintendo/HORI의 원본 녹음 샘플에 대한 복제·재배포 허가를 찾지 못했으며, 합성 음색이 게임 원본과 완전히 같다고 검증하지 않았다. 리메이크와 실제 Switch 2 기기의 음성 인식 성공 여부는 실기 검증이 필요하다.
 - 공식 페이지가 공개되어 있다는 사실은 파일을 재배포할 수 있는 라이선스가 아니다. 공식 자료는 원래 호스트에서 표시하거나 원문 링크로 연결한다. 확인 당시 악보 페이지 HTTP 응답에는 `X-Frame-Options`나 CSP의 `frame-ancestors`가 없었으나, 이후 서버 정책에 따라 외부 표시가 제한될 수 있다.
 - HORI의 높은 파♯부터 높은 라까지 네 가지 운지는 해당 전자 제품의 확장 운지다. 일반 도자기 오카리나의 운지라고 설명하지 않는다. 일부 레♯ 대체 운지는 공식 펌웨어 업데이트 후에 지원된다.
@@ -43,3 +43,11 @@
 - 한국닌텐도 리메이크 공식 사이트: https://www.nintendo.com/kr/games/switch2/aa9ja/index.html
 - 사이트 메인 타이틀에서 연결된 원본: https://www.nintendo.com/kr/games/switch2/aa9ja/assets/img/top/mv_logo.webp
 - 2026-11-13 공식 페이지 연결과 브라우저 이미지 로딩(1590×1270)을 확인. 원본을 변경하거나 저장소에 복제하지 않고 직접 표시합니다.
+
+
+## 세로 고정 화면과 두 손가락 운지
+
+- [화면 방향 잠금](https://developer.mozilla.org/en-US/docs/Web/API/ScreenOrientation/lock)은 브라우저 지원 및 전체 화면 조건이 달라 앱 내부 CSS 회전을 사용합니다.
+- [elementFromPoint](https://developer.mozilla.org/en-US/docs/Web/API/Document/elementFromPoint)는 뷰포트 좌표를 받으므로 회전된 요소의 포인터 좌표를 다시 회전시키지 않습니다.
+- [touch-action](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/touch-action)으로 연주 표면의 기본 확대·스크롤 동작을 억제합니다. 실제 단말의 시스템 제스처까지 모두 제어할 수 있다는 뜻은 아닙니다.
+- 게임 버튼 및 19음 매칭은 [버튼·음계 확인](controller-mapping.md), 공식 녹음 박자·음색과 직접 합성의 차이는 [음원 분석](audio-analysis.md)에 기록했습니다.

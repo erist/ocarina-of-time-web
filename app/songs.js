@@ -5,10 +5,10 @@
  * complete copyrighted arrangements. The score and recording URLs below were
  * read from Nintendo's own melody page and score modal; no media is bundled.
  *
- * N64 sounding pitches D5/F5/A5/B5/D6 are documented by musicologist Tim Summers
- * in the publisher's excerpt below. Some ocarina scores use octave-transposed
- * written pitches. The 2026 remake's precise sounding register has not been
- * independently measured, so this data does not claim verified 2026 sound parity.
+ * Basic sounding pitches are D5/F5/A5/B5/D6. The 2026 normal controls
+ * L/R/A/Y/X and B to stop were verified against Nintendo game captures.
+ * Direct synthesis and official phrase recordings have distinct timbres;
+ * see docs/controller-mapping.md and docs/audio-analysis.md.
  */
 export const SOURCES = Object.freeze({
   official: 'https://www.nintendo.com/jp/games/switch2/aa9ja/melody/index.html',
@@ -19,7 +19,7 @@ export const SOURCES = Object.freeze({
   pitches: 'https://note.com/dubooks/n/n99184f8fc0d4',
 });
 
-export const PLAYBACK_NOTE = '버튼 자동 연주는 입력 순서를 일정한 길이로 재생합니다. 원곡의 리듬은 공식 연주 듣기에서 확인하세요.';
+export const PLAYBACK_NOTE = 'Nintendo 공식 연주의 박자와 음색으로 재생합니다.';
 
 export const NOTES = Object.freeze({
   D: Object.freeze({ midi: 74, label: '레', pitch: 'D5', key: '1', control: 'L' }),
@@ -121,8 +121,6 @@ const entries = [
 export const SONGS = Object.freeze(entries.map(({ audioFile, scoreFile, ...song }) => Object.freeze({
   ...song,
   notes: Object.freeze(song.notes),
-  // An even input aid, deliberately not represented as Nintendo's score rhythm.
-  beats: Object.freeze(song.notes.map(() => 1)),
   officialScore: `${officialRoot}/modal_score/${scoreFile}`,
   officialAudio: `${officialRoot}/melody/${audioFile}`,
 })));

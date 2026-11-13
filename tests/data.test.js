@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NOTES, SONGS, SCARECROW } from '../app/songs.js';
+import { SONG_PERFORMANCES, noteIndexAt } from '../app/song-performance.js';
 import { HOLES, FINGERINGS, getFingering, getMidiForHoles } from '../app/fingering.js';
 
 // Regression fixtures for the short learned game inputs, not full arrangements.
@@ -36,8 +37,16 @@ test('the five game controls retain D5, F5, A5, B5, and D6 pitches', () => {
 test('each song plays the canonical short game command in the correct order', () => {
   for (const song of SONGS) {
     assert.deepEqual(song.notes.map(note => NOTES[note]?.midi), gameCommands[song.id], song.id);
-    assert.equal(song.beats.length, song.notes.length, song.id);
-    assert.ok(song.beats.every(beats => Number.isFinite(beats) && beats > 0), song.id);
+    const performance = SONG_PERFORMANCES[song.id];
+    assert.equal(performance.starts.length, song.notes.length, song.id);
+    assert.equal(performance.ends.length, song.notes.length, song.id);
+    performance.starts.forEach((start, index) => {
+      assert.ok(start >= 0 && performance.ends[index] > start);
+      assert.ok(performance.ends[index] <= (performance.starts[index + 1] ?? performance.duration));
+      assert.equal(noteIndexAt(song.id, start), index);
+      assert.equal(noteIndexAt(song.id, performance.ends[index]), -1);
+    });
+    assert.equal(noteIndexAt(song.id, performance.duration), -1);
   }
 });
 
