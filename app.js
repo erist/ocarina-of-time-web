@@ -223,6 +223,8 @@ function selectSong(id, persist = true) {
   $('#official-play').hidden = !selected?.officialAudio;
   if (selected?.officialScore) {
     const img = document.createElement('img');
+    img.width = 1912;
+    img.height = 874;
     img.src = selected.officialScore;
     img.alt = `${selected.title} 공식 전체 악보와 운지표`;
     img.referrerPolicy = 'no-referrer';
@@ -245,7 +247,11 @@ function setMenuPage(page) {
   $$('[data-menu-page]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.menuPage === page)));
   $$('[data-panel]').forEach(panel => { panel.hidden = panel.dataset.panel !== page; });
 }
-function closeMenu() { if ($('#menu-dialog').open) $('#menu-dialog').close(); }
+function closeDialog(dialog) {
+  stop();
+  dialog.close();
+}
+function closeMenu() { if ($('#menu-dialog').open) closeDialog($('#menu-dialog')); }
 function openMenu() {
   stop();
   setMenuPage('songs');
@@ -283,18 +289,19 @@ document.addEventListener('click', event => {
     renderSongs();
     return;
   }
-  if (el.classList.contains('close-dialog')) el.closest('dialog').close();
+  if (el.classList.contains('close-dialog')) closeDialog(el.closest('dialog'));
 });
 for (const dialog of $$('dialog')) {
+  dialog.addEventListener('cancel', stop);
   dialog.addEventListener('close', () => {
-    stop();
+    if (dialog.open) return;
     if (dialog.id === 'menu-dialog') $('#menu-button').setAttribute('aria-expanded', 'false');
     if (!$$('dialog[open]').length) $(dialog.id === 'score-dialog' ? '#score-link' : '#menu-button').focus({ preventScroll: true });
   });
   dialog.addEventListener('click', event => {
     if (event.target !== dialog) return;
     const rect = dialog.getBoundingClientRect();
-    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeDialog(dialog);
   });
 }
 $('#menu-button').onclick = openMenu;
@@ -366,7 +373,7 @@ $('#custom-clear').onclick = () => {
   renderCustom();
 };
 $('#custom-play').onclick = () => playSong(customSong());
-$('#custom-select').onclick = () => { if (custom.length === 8) { $('#scarecrow-dialog').close(); selectSong('custom'); } };
+$('#custom-select').onclick = () => { if (custom.length === 8) { closeDialog($('#scarecrow-dialog')); selectSong('custom'); } };
 
 document.addEventListener('keydown', event => {
   if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.target.closest('input,select,textarea') || $$('dialog[open]').length) return;
