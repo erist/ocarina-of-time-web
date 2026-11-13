@@ -1,59 +1,386 @@
 import { OcarinaAudio } from './audio.js';
 import { SONGS, NOTES, PLAYBACK_NOTE } from './songs.js';
 import { HOLES, getFingering, getMidiForHoles } from './fingering.js';
+import { bodySvg } from './instrument-art.js';
 
-const $ = (s) => document.querySelector(s);
-const $$ = (s) => [...document.querySelectorAll(s)];
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
 const audio = new OcarinaAudio();
 const media = $('#official-audio');
 const noteEntries = Object.entries(NOTES);
-const symbols = ['♧','◷','☼','ϟ','♞','❧','❧','♨','♧','◇','☾','✦'];
-let mode='merch', filter='all', selected=null, playing=null, officialPlaying=false;
-let closed = new Set(getFingering(74).closed), history=[], progress=0, volume=0.7, muted=false, bpm=100, octave=0, haptics=true;
-let custom=[], toastTimer, playGeneration=0, practiceTimer, previewTimer;
-const holds=new Map();
-try { const saved=JSON.parse(localStorage.getItem('hyrule-settings')||'{}'); volume=Number.isFinite(saved.volume)?Math.min(1,Math.max(0,saved.volume)):volume; bpm=[...Array(23)].map((_,i)=>50+i*5).includes(saved.bpm)?saved.bpm:bpm; octave=[-12,0,12].includes(saved.octave)?saved.octave:0; haptics=saved.haptics!==false; mode=saved.mode==='simple'?'simple':'merch'; const notes=JSON.parse(localStorage.getItem('hyrule-scarecrow')||'[]'); if(Array.isArray(notes))custom=notes.filter(n=>Object.hasOwn(NOTES,n)).slice(0,8); } catch {}
+const holds = new Map();
+const symbols = ['♧', '◷', '☼', 'ϟ', '♞', '❧', '❧', '♨', '♧', '◇', '☾', '✦'];
+let mode = 'merch', filter = 'all', selected = null, playing = null, officialPlaying = false;
+let closed = new Set(getFingering(74).closed), progress = 0;
+let volume = 0.7, bpm = 100, octave = 0, haptics = true, custom = [];
+let toastTimer, practiceTimer, previewTimer, playGeneration = 0;
+let selectedId = SONGS[0].id;
+try {
+  const saved = JSON.parse(localStorage.getItem('hyrule-settings') || '{}');
+  volume = Number.isFinite(saved.volume) ? Math.min(1, Math.max(0, saved.volume)) : volume;
+  bpm = Number.isFinite(saved.bpm) && saved.bpm >= 50 && saved.bpm <= 160 ? saved.bpm : bpm;
+  octave = [-12, 0, 12].includes(saved.octave) ? saved.octave : 0;
+  haptics = saved.haptics !== false;
+  mode = saved.mode === 'simple' ? 'simple' : 'merch';
+  const notes = JSON.parse(localStorage.getItem('hyrule-scarecrow') || '[]');
+  if (Array.isArray(notes)) custom = notes.filter(n => Object.hasOwn(NOTES, n)).slice(0, 8);
+  selectedId = localStorage.getItem('hyrule-selected-song') || selectedId;
+} catch {}
 audio.setVolume(volume);
-function saveSettings(){try{localStorage.setItem('hyrule-settings',JSON.stringify({volume,bpm,octave,haptics,mode}));}catch{}}
-function toast(message){$('#toast').textContent=message;$('#toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),2800);}
-function noteLabel(n){return n==='d'?'레↑':NOTES[n].label;}
-function miniNote(n){return `<span class="mini-note ${n==='d'?'high':''}" title="${NOTES[n].pitch}">${noteLabel(n)}</span>`;}
-function bodySvg(prefix, decorative=false){return `<svg class="${decorative?'decor-ocarina':'ocarina-body'}" viewBox="0 0 400 267" aria-hidden="true"><defs><linearGradient id="${prefix}-blue" x1=".2" y1="0" x2=".7" y2="1"><stop stop-color="#85b5c9"/><stop offset=".38" stop-color="#457c9b"/><stop offset=".7" stop-color="#285776"/><stop offset="1" stop-color="#193b59"/></linearGradient><linearGradient id="${prefix}-gold" x2="0" y2="1"><stop stop-color="#dfce99"/><stop offset="1" stop-color="#9d8b60"/></linearGradient><radialGradient id="${prefix}-shine"><stop stop-color="#d4eeed" stop-opacity=".4"/><stop offset="1" stop-color="#afd1e7" stop-opacity="0"/></radialGradient></defs><path d="M24 178C38 164 92 142 147 118C184 101 222 96 250 98L266 37Q269 27 283 28L303 32Q310 35 309 44L299 106C344 108 373 130 379 161C391 205 344 234 280 239C184 248 82 217 29 192Q14 186 24 178Z" fill="url(#${prefix}-blue)" stroke="#8ab0b9" stroke-opacity=".6" stroke-width="1.5"/><path d="M44 178C109 142 196 107 252 109M42 198C115 224 210 242 293 230" fill="none" stroke="#c3e1de" stroke-opacity=".18" stroke-width="2"/><ellipse cx="229" cy="137" rx="124" ry="55" fill="url(#${prefix}-shine)"/><path d="M254 83L303 89L299 109Q276 116 247 104Z" fill="url(#${prefix}-gold)" stroke="#ead7a3" stroke-width="1"/><path d="M255 98l9-10 7 12 9-10 8 14 11-9M263 105l7-7 7 9 9-7 7 8" fill="none" stroke="#384b46" stroke-width="2"/>${decorative?HOLES.filter(h=>!h.back).map(h=>`<circle cx="${h.x*4}" cy="${h.y*2.67}" r="${h.small?6:11}" fill="#122d41" stroke="#84a6ae" stroke-width="1.2"/>`).join(''):''}</svg>`;}
-function keysHtml(){return `<div class="quick-notes">${noteEntries.map(([id,n])=>`<button class="note-key" data-note="${id}" aria-label="${n.label} ${n.pitch} 연주, 키보드 ${n.key}"><strong>${noteLabel(id)}</strong><small>${n.pitch} · ${n.key}</small></button>`).join('')}</div>`;}
-function holeHtml(h){return `<button class="hole ${h.small?'small':''} ${closed.has(h.id)?'closed':''}" data-hole="${h.id}" ${h.back?'':`style="left:${h.x}%;top:${h.y}%"`} aria-label="${h.back?'뒷면 ':''}${h.id}번 구멍" aria-pressed="${closed.has(h.id)}">${h.id}</button>`;}
-function renderInstrument(){for(const [i,el] of $$('.instrument-mount').entries()){el.innerHTML=mode==='simple'?`<div class="simple-scene">${bodySvg('simple'+i,true)}${keysHtml()}<p class="instrument-help">누르는 동안 소리가 나요 · 키보드 1–5</p></div>`:`<div class="ocarina-scene">${bodySvg('merch'+i)}${HOLES.filter(h=>!h.back).map(holeHtml).join('')}<button class="mouth-button" data-blow aria-label="선택한 운지로 연주, 누르고 유지">연주</button></div><div class="thumb-row"><span>뒷면 엄지</span>${HOLES.filter(h=>h.back).map(holeHtml).join('')}<span>● 닫힘 · ○ 열림</span></div><div class="finger-status"></div>${keysHtml()}<p class="instrument-help">구멍은 터치로 열고 닫기 · 위 ‘연주’를 누르고 유지<br>아래 음을 누르면 운지가 자동으로 맞춰져요</p>`;}syncHoles();$$('[data-mode]').forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode);b.setAttribute('aria-pressed',String(b.dataset.mode===mode));});}
-function syncHoles(){const midi=getMidiForHoles(closed);$$('[data-hole]').forEach(b=>{const isClosed=closed.has(Number(b.dataset.hole));b.classList.toggle('closed',isClosed);b.setAttribute('aria-pressed',String(isClosed));});$$('.finger-status').forEach(el=>el.textContent=midi===null?'운지 조합을 확인해 주세요':getFingering(midi).label);}
-function setFingering(midi){const fingering=getFingering(midi);if(fingering){closed=new Set(fingering.closed);syncHoles();}}
-function highlight(midi){$$('[data-note]').forEach(b=>b.classList.toggle('sounding',NOTES[b.dataset.note]?.midi===midi));$$('[data-blow]').forEach(b=>b.classList.toggle('sounding',midi!==null));$('#sound-status').textContent=midi===null?'연주 준비':`${getFingering(midi)?.label||''} 연주 중`;}
-function renderSongs(){const query=$('#song-search').value.trim().toLowerCase();const found=SONGS.filter(s=>(filter==='all'||s.category===filter)&&`${s.title} ${s.en} ${s.effect}`.toLowerCase().includes(query));$('#song-list').innerHTML=found.map(s=>`<article class="song-card ${playing===s.id?'is-playing':''}" data-song="${s.id}" style="--song-color:${s.color}"><button class="song-open" data-open="${s.id}" aria-label="${s.title} 악보 펼치기"><span class="song-emblem" aria-hidden="true">${symbols[SONGS.indexOf(s)]}</span><span class="song-info"><span class="song-heading"><span class="song-name">${s.title}</span><span class="song-en">${s.en}</span></span><span class="song-effect" style="display:block">${s.effect}</span><span class="mini-notes" aria-label="${s.notes.map(noteLabel).join(' ')}">${s.notes.map(miniNote).join('')}</span></span></button><button class="song-play" data-play="${s.id}" aria-label="${s.title} ${playing===s.id?'정지':'입력 구절 재생'}">${playing===s.id?'■':'▶'}</button></article>`).join('');$('#empty-results').hidden=found.length>0;}
-function updatePlaybackButtons(){ $$('.song-card').forEach(c=>{const isPlaying=c.dataset.song===playing;c.classList.toggle('is-playing',isPlaying);const b=c.querySelector('.song-play');b.textContent=isPlaying?'■':'▶';b.setAttribute('aria-label',`${SONGS.find(s=>s.id===c.dataset.song).title} ${isPlaying?'정지':'입력 구절 재생'}`);});$('#practice-play').textContent=selected&&playing===selected.id?'■ 재생 정지':'▶ 입력 구절 재생';$('#official-play').textContent=officialPlaying?'■ 전체곡 정지':'♫ 공식 전체곡 듣기';}
-function stop(){playGeneration++;clearTimeout(previewTimer);audio.stopAll();media.pause();officialPlaying=false;playing=null;holds.clear();highlight(null);$$('.mini-note.current').forEach(e=>e.classList.remove('current'));updatePlaybackButtons();}
-function recordNote(midi){const id=noteEntries.find(([,n])=>n.midi===midi)?.[0];const label=id?noteLabel(id):getFingering(midi)?.label.split(' · ')[0];if(!label)return;history.push(label);history=history.slice(-8);$('#played-label').textContent='당신의 선율';$('#played-notes').innerHTML=history.map(n=>`<span class="history-note">${n}</span>`).join('');if(haptics&&navigator.vibrate)navigator.vibrate(12);if($('#practice-dialog').open&&selected&&id){clearTimeout(practiceTimer);if(selected.notes[progress]===id){progress++;$('#practice-progress-label').textContent=progress===selected.notes.length?'✦ 선율을 완성했어요!':`${progress} / ${selected.notes.length}음 · 다음은 ${noteLabel(selected.notes[progress])}`;if(progress===selected.notes.length){toast('✦ 선율을 완성했어요');practiceTimer=setTimeout(()=>{progress=0;updatePracticeProgress();},1800);}}else{progress=id===selected.notes[0]?1:0;$('#practice-progress-label').textContent=`다시 이어가요 · 다음은 ${noteLabel(selected.notes[progress])}`;}updatePracticeProgress();}}
-function updatePracticeProgress(){ $$('#practice-sequence .practice-step').forEach((el,i)=>{el.classList.toggle('done',i<progress);el.classList.toggle('current',i===progress);});}
-async function startHold(el,key){const midi=el.hasAttribute('data-blow')?getMidiForHoles(closed):NOTES[el.dataset.note]?.midi;if(midi==null){toast('아래 음 버튼으로 운지를 맞춰 보세요');return;}const unlocking=audio.unlock();if(playing||officialPlaying)stop();const token={el,midi,voice:null,ready:false};holds.set(key,token);setFingering(midi);try{await unlocking;if(holds.get(key)!==token)return;token.ready=true;if(token.midi===null)return;token.voice=audio.noteOn(token.midi+octave);highlight(token.midi);recordNote(token.midi);}catch(e){holds.delete(key);toast(e.message);}}
-function endHold(key){const item=holds.get(key);if(!item)return;holds.delete(key);audio.noteOff(item.voice);if(audio.activeVoice===null)highlight(null);}
-function quickPreview(midi){if(midi===null)return;const el={dataset:{note:noteEntries.find(([,n])=>n.midi===midi)?.[0]},hasAttribute:()=>true};const key='preview';clearTimeout(previewTimer);startHold(el,key);const token=holds.get(key);previewTimer=setTimeout(()=>{if(holds.get(key)===token)endHold(key);},200);}
-async function playSong(song){if(playing===song.id){stop();return;}stop();const generation=playGeneration;playing=song.id;updatePlaybackButtons();try{await audio.play(song.notes.map((n,i)=>({midi:NOTES[n].midi+octave,beats:song.beats?.[i]||1})),{bpm,onNote(index){if(generation!==playGeneration)return;$$('.mini-note.current').forEach(e=>e.classList.remove('current'));if(index<0){highlight(null);return;}const midi=NOTES[song.notes[index]].midi;setFingering(midi);highlight(midi);const row=document.querySelector(`[data-song="${song.id}"]`);row?.querySelectorAll('.mini-note')[index]?.classList.add('current');if(selected?.id===song.id)$('#practice-sequence').children[index]?.querySelector('.mini-note').classList.add('current');},onEnd(){if(generation===playGeneration){playing=null;updatePlaybackButtons();}}});}catch(e){if(generation===playGeneration){stop();toast(e.message);}}}
-function openPractice(id){const song=SONGS.find(s=>s.id===id);if(!song)return;stop();clearTimeout(practiceTimer);selected=song;progress=0;$('#practice-title').textContent=song.title;$('#practice-effect').textContent=song.effect;$('#practice-progress-label').textContent=`차례대로 음을 누르세요 · 첫 음은 ${noteLabel(song.notes[0])}`;$('#practice-sequence').innerHTML=song.notes.map((n,i)=>`<span class="practice-step">${miniNote(n)}<small>${i+1}</small></span>`).join('');$('#score-link').href=song.officialScore;$('#score-viewer').innerHTML='';const frame=document.createElement('img');frame.src=song.officialScore;frame.alt=`${song.title} Nintendo 공식 전체 오선보와 운지표`;frame.referrerPolicy='no-referrer';frame.onerror=()=>{frame.hidden=true;const message=document.createElement('p');message.className='score-error';message.textContent='공식 악보를 불러오지 못했어요. 원본 크게 보기에서 확인해 주세요.';$('#score-viewer').append(message);};$('#score-viewer').append(frame);updatePracticeProgress();updatePlaybackButtons();setFingering(NOTES[song.notes[0]].midi);$('#practice-dialog').showModal();$('#practice-dialog').scrollTop=0;}
-function showDialog(id){stop();$(id).showModal();}
-function renderCustom(){ $('#custom-sequence').innerHTML=Array.from({length:8},(_,i)=>`<span class="practice-step"><span class="mini-note ${custom[i]==='d'?'high':''}">${custom[i]?noteLabel(custom[i]):'·'}</span><small>${i+1}</small></span>`).join('');$('#custom-play').disabled=custom.length!==8;}
 
-document.addEventListener('pointerdown',e=>{const el=e.target.closest('[data-note], [data-blow]');if(!el||e.button!==0)return;e.preventDefault();el.setPointerCapture?.(e.pointerId);startHold(el,e.pointerId);});
-for(const event of ['pointerup','pointercancel','lostpointercapture'])document.addEventListener(event,e=>endHold(e.pointerId));
-document.addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;if(e.detail===0&&(el.dataset.note||el.hasAttribute('data-blow'))){const key='accessible';startHold(el,key);const token=holds.get(key);setTimeout(()=>{if(holds.get(key)===token)endHold(key);},230);return;}if(el.dataset.hole){const n=Number(el.dataset.hole);closed.has(n)?closed.delete(n):closed.add(n);syncHoles();const midi=getMidiForHoles(closed);const mouth=[...holds.values()].find(h=>h.el.hasAttribute('data-blow'));if(mouth){audio.noteOff(mouth.voice);mouth.midi=midi;if(midi!==null&&mouth.ready){mouth.voice=audio.noteOn(midi+octave);highlight(midi);recordNote(midi);}else highlight(null);}else if(midi!==null){quickPreview(midi);}return;}if(el.dataset.mode){stop();mode=el.dataset.mode;renderInstrument();saveSettings();return;}if(el.dataset.open){openPractice(el.dataset.open);return;}if(el.dataset.play){playSong(SONGS.find(s=>s.id===el.dataset.play));return;}if(el.dataset.filter){filter=el.dataset.filter;$$('[data-filter]').forEach(b=>{b.classList.toggle('active',b===el);b.setAttribute('aria-pressed',String(b===el));});renderSongs();return;}if(el.classList.contains('close-dialog'))el.closest('dialog').close();});
-for(const d of $$('dialog')){d.addEventListener('close',()=>{stop();clearTimeout(practiceTimer);if(d.id==='practice-dialog')$('#score-viewer').replaceChildren();});d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();}});}
-$('#settings-button').onclick=()=>showDialog('#settings-dialog');$('#help-button').onclick=$('#connection-help').onclick=()=>showDialog('#help-dialog');$('#sources-button').onclick=()=>showDialog('#sources-dialog');
-$('#search-toggle').onclick=()=>{const wrap=$('.search-wrap');wrap.hidden=!wrap.hidden;if(!wrap.hidden)$('#song-search').focus();else{$('#song-search').value='';renderSongs();}};$('#song-search').oninput=renderSongs;
-$('#clear-button').onclick=()=>{stop();history=[];$('#played-notes').replaceChildren();$('#played-label').textContent='음표를 터치해 선율을 만들어 보세요';};
-$('#mute-button').onclick=()=>{muted=!muted;audio.setVolume(muted?0:volume);media.muted=muted;$('#mute-button').textContent=muted?'♪ 소리 꺼짐':'♫ 소리 켜짐';$('#mute-button').setAttribute('aria-pressed',String(muted));};
-$('#volume').value=volume*100;$('#volume-value').textContent=`${Math.round(volume*100)}%`;media.volume=volume;$('#volume').oninput=e=>{volume=+e.target.value/100;audio.setVolume(muted?0:volume);media.volume=volume;$('#volume-value').textContent=`${Math.round(volume*100)}%`;saveSettings();};
-$('#tempo').value=bpm;$('#tempo-value').textContent=`${bpm} BPM`;$('#tempo').oninput=e=>{bpm=+e.target.value;$('#tempo-value').textContent=`${bpm} BPM`;saveSettings();};$('#octave').value=octave;$('#octave').onchange=e=>{stop();octave=+e.target.value;saveSettings();};$('#haptics').checked=haptics;$('#haptics').onchange=e=>{haptics=e.target.checked;saveSettings();};
-$('#practice-play').onclick=()=>selected&&playSong(selected);$('#practice-play').title=PLAYBACK_NOTE;$('#practice-reset').onclick=()=>{stop();clearTimeout(practiceTimer);progress=0;updatePracticeProgress();$('#practice-progress-label').textContent='차례대로 음을 누르세요';};
-$('#official-play').onclick=async()=>{if(officialPlaying){stop();return;}stop();if(!selected)return;const generation=playGeneration;media.src=selected.officialAudio;media.volume=volume;officialPlaying=true;updatePlaybackButtons();try{await media.play();if(generation!==playGeneration)media.pause();}catch{if(generation===playGeneration){officialPlaying=false;updatePlaybackButtons();toast('공식 음원을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.');}}};media.onended=()=>{officialPlaying=false;updatePlaybackButtons();};media.onerror=()=>{if(officialPlaying){officialPlaying=false;updatePlaybackButtons();toast('공식 음원을 불러오지 못했어요. 원문 사이트에서 확인해 주세요.');}};
-$('#scarecrow-button').onclick=()=>{showDialog('#scarecrow-dialog');renderCustom();};$('#custom-keys').innerHTML=noteEntries.map(([n,v])=>`<button data-custom="${n}" aria-label="${v.label} 추가">${noteLabel(n)}</button>`).join('');$('#custom-keys').onclick=async e=>{const b=e.target.closest('[data-custom]');if(!b)return;if(custom.length>=8){toast('8음을 모두 입력했어요. 다시 입력하려면 초기화하세요.');return;}custom.push(b.dataset.custom);renderCustom();try{localStorage.setItem('hyrule-scarecrow',JSON.stringify(custom));}catch{}stop();const generation=playGeneration;try{await audio.play([{midi:NOTES[b.dataset.custom].midi+octave,beats:.3}],{bpm:100});}catch(e){if(generation===playGeneration)toast(e.message);}};$('#custom-clear').onclick=()=>{stop();custom=[];try{localStorage.removeItem('hyrule-scarecrow');}catch{}renderCustom();};$('#custom-play').onclick=()=>playSong({id:'custom',notes:custom});
-function keyboardAllowed(e){return !e.target.closest('input,select,textarea')&&!$$('dialog[open]').some(d=>!['practice-dialog','scarecrow-dialog'].includes(d.id));}
-document.addEventListener('keydown',e=>{if(e.repeat||e.altKey||e.ctrlKey||e.metaKey||!keyboardAllowed(e))return;let el;const n=noteEntries.find(([,v])=>v.key===e.key)?.[0];if(n)el=document.querySelector(`${$('#practice-dialog').open?'#practice-instrument':'#main-instrument'} [data-note="${n}"]`);else if([' ','Enter'].includes(e.key)&&e.target.matches('[data-note],[data-blow]'))el=e.target;if(el){e.preventDefault();startHold(el,'key'+e.code);}});document.addEventListener('keyup',e=>endHold('key'+e.code));window.addEventListener('blur',()=>{if(!officialPlaying)stop();});window.addEventListener('pagehide',stop);document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();});
-$('#merch-source-note').textContent='공식 굿즈 배열은 HORI NSX-261 매뉴얼의 앞면 10개·뒷면 2개 위치와 운지를 참고했습니다. 휴대폰에서는 구멍을 터치할 때마다 열린 상태와 닫힌 상태가 바뀝니다. 기본 5음은 D5·F5·A5·B5·D6이며, 2026판의 실제 음색과 기기 인식은 실물 검증이 필요합니다.';
-renderInstrument();renderSongs();
-// Exposes read-only diagnostic snapshots for browser QA, never microphone data.
-window.ocarinaState=()=>({mode,playing,officialPlaying,selected:selected?.id??null,progress,closed:[...closed],currentMidi:getMidiForHoles(closed),activeMidi:audio.lastMidi,contextState:audio.context?.state??'not-started',activeVoice:audio.activeVoice,heldPointers:holds.size,custom:[...custom],volume,octave});
+function saveSettings() {
+  try { localStorage.setItem('hyrule-settings', JSON.stringify({ volume, bpm, octave, haptics, mode })); } catch {}
+}
+function toast(message) {
+  $('#toast').textContent = message;
+  $('#toast').classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => $('#toast').classList.remove('visible'), 2200);
+}
+function noteLabel(id) { return id === 'd' ? '레↑' : NOTES[id].label; }
+function miniNote(id) {
+  return `<span class="mini-note ${id === 'd' ? 'high' : ''}" title="${NOTES[id].pitch}">${noteLabel(id)}</span>`;
+}
+function keysHtml() {
+  return `<div class="quick-notes">${noteEntries.map(([id, n]) => `<button class="note-key" data-note="${id}" aria-label="${n.label} ${n.pitch} 연주, 키보드 ${n.key}"><strong>${noteLabel(id)}</strong><small>${n.pitch}</small></button>`).join('')}</div>`;
+}
+function holeHtml(h) {
+  return `<button class="hole ${h.small ? 'small' : ''} ${closed.has(h.id) ? 'closed' : ''}" data-hole="${h.id}" ${h.back ? '' : `style="left:${h.x}%;top:${h.y}%"`} aria-label="${h.back ? '뒷면 ' : ''}${h.id}번 구멍" aria-pressed="${closed.has(h.id)}">${h.id}</button>`;
+}
+function renderInstrument() {
+  $('#main-instrument').innerHTML = mode === 'simple'
+    ? `<div class="simple-scene">${bodySvg('simple', true)}${keysHtml()}</div>`
+    : `<div class="ocarina-scene">${bodySvg('merch')}${HOLES.filter(h => !h.back).map(holeHtml).join('')}<button class="mouth-button" data-blow aria-label="선택한 운지로 연주, 누르고 유지">♪</button></div><div class="instrument-dock"><div class="thumb-row"><span>뒷면</span>${HOLES.filter(h => h.back).map(holeHtml).join('')}</div>${keysHtml()}</div>`;
+  syncHoles();
+  $$('[data-mode]').forEach(button => {
+    button.classList.toggle('active', button.dataset.mode === mode);
+    button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
+  });
+}
+function syncHoles() {
+  $$('[data-hole]').forEach(button => {
+    const isClosed = closed.has(Number(button.dataset.hole));
+    button.classList.toggle('closed', isClosed);
+    button.setAttribute('aria-pressed', String(isClosed));
+  });
+}
+function setFingering(midi) {
+  const fingering = getFingering(midi);
+  if (fingering) { closed = new Set(fingering.closed); syncHoles(); }
+}
+function highlight(midi) {
+  $$('[data-note]').forEach(button => button.classList.toggle('sounding', NOTES[button.dataset.note].midi === midi));
+  $$('[data-blow]').forEach(button => button.classList.toggle('sounding', midi !== null));
+}
+function renderSongs() {
+  const query = $('#song-search').value.trim().toLowerCase();
+  const found = SONGS.filter(song => (filter === 'all' || song.category === filter)
+    && `${song.title} ${song.en} ${song.effect}`.toLowerCase().includes(query));
+  $('#song-list').innerHTML = found.map(song => `<article class="song-card ${selected?.id === song.id ? 'is-selected' : ''}" data-song="${song.id}" style="--song-color:${song.color}"><button class="song-open" data-open="${song.id}" aria-label="${song.title} 선택" aria-pressed="${selected?.id === song.id}"><span class="song-emblem" aria-hidden="true">${symbols[SONGS.indexOf(song)]}</span><span class="song-info"><span class="song-heading"><span class="song-name">${song.title}</span></span><span class="song-effect">${song.effect}</span><span class="mini-notes" aria-label="${song.notes.map(noteLabel).join(' ')}">${song.notes.map(miniNote).join('')}</span></span></button><button class="song-play" data-play="${song.id}" aria-label="${song.title} 재생">▶</button></article>`).join('');
+  $('#empty-results').hidden = found.length > 0;
+  updatePlaybackButtons();
+}
+function updatePlaybackButtons() {
+  $$('.song-card').forEach(card => {
+    const active = card.dataset.song === playing;
+    card.classList.toggle('is-playing', active);
+    const button = card.querySelector('.song-play');
+    button.textContent = active ? '■' : '▶';
+    button.setAttribute('aria-label', `${SONGS.find(song => song.id === card.dataset.song).title} ${active ? '정지' : '재생'}`);
+  });
+  const active = selected && playing === selected.id;
+  $('#practice-play').textContent = active ? '■ 정지' : '▶ 재생';
+  $('#practice-play').setAttribute('aria-label', active ? '선택한 곡 정지' : '선택한 곡 재생');
+  $('#official-play').textContent = officialPlaying ? '■ 정지' : '♫ 원곡';
+  $('#official-play').setAttribute('aria-label', officialPlaying ? '원곡 정지' : '공식 원곡 듣기');
+  $('#custom-play').textContent = playing === 'custom' ? '■ 정지' : '▶ 재생';
+}
+function stop() {
+  playGeneration++;
+  clearTimeout(previewTimer);
+  audio.stopAll();
+  media.pause();
+  officialPlaying = false;
+  playing = null;
+  holds.clear();
+  highlight(null);
+  $$('.mini-note.current').forEach(el => el.classList.remove('current'));
+  updatePlaybackButtons();
+  updatePracticeProgress();
+}
+function resetProgress() {
+  clearTimeout(practiceTimer);
+  progress = 0;
+  updatePracticeProgress();
+  $('#practice-progress-label').textContent = '';
+}
+function updatePracticeProgress() {
+  $$('#practice-sequence .practice-step').forEach((el, i) => {
+    el.classList.toggle('done', !playing && i < progress);
+    el.classList.toggle('current', !playing && i === progress);
+  });
+}
+function recordNote(midi) {
+  const id = noteEntries.find(([, note]) => note.midi === midi)?.[0];
+  if (haptics && navigator.vibrate) navigator.vibrate(12);
+  if (!selected || !id) return;
+  clearTimeout(practiceTimer);
+  if (progress === selected.notes.length) progress = 0;
+  progress = selected.notes[progress] === id ? progress + 1 : (id === selected.notes[0] ? 1 : 0);
+  $('#practice-progress-label').textContent = progress === selected.notes.length ? '연주 완료' : `${progress} / ${selected.notes.length}`;
+  updatePracticeProgress();
+  if (progress === selected.notes.length) practiceTimer = setTimeout(resetProgress, 1800);
+}
+async function startHold(el, key, { record = true } = {}) {
+  const midi = el.hasAttribute('data-blow') ? getMidiForHoles(closed) : NOTES[el.dataset.note]?.midi;
+  if (midi == null) { toast('운지를 확인하세요'); return; }
+  const unlocking = audio.unlock();
+  if (playing || officialPlaying) stop();
+  const token = { el, midi, voice: null, ready: false, record };
+  holds.set(key, token);
+  setFingering(midi);
+  try {
+    await unlocking;
+    if (holds.get(key) !== token) return;
+    token.ready = true;
+    if (token.midi === null) return;
+    token.voice = audio.noteOn(token.midi + octave);
+    highlight(token.midi);
+    if (token.record) recordNote(token.midi);
+  } catch (error) { if (holds.get(key) === token) holds.delete(key); toast(error.message); }
+}
+function endHold(key) {
+  const token = holds.get(key);
+  if (!token) return;
+  holds.delete(key);
+  audio.noteOff(token.voice);
+  if (audio.activeVoice === null) highlight(null);
+}
+function tapNote(el, key, duration = 220) {
+  if (key === 'preview') clearTimeout(previewTimer);
+  startHold(el, key, { record: key !== 'preview' });
+  const token = holds.get(key);
+  const timer = setTimeout(() => { if (holds.get(key) === token) endHold(key); }, duration);
+  if (key === 'preview') previewTimer = timer;
+}
+function changeHole(id) {
+  closed.has(id) ? closed.delete(id) : closed.add(id);
+  syncHoles();
+  const midi = getMidiForHoles(closed);
+  const mouth = [...holds.values()].find(token => token.el.hasAttribute('data-blow'));
+  if (mouth) {
+    audio.noteOff(mouth.voice);
+    mouth.midi = midi;
+    if (midi !== null && mouth.ready) {
+      mouth.voice = audio.noteOn(midi + octave);
+      highlight(midi);
+      if (mouth.record) recordNote(midi);
+    } else highlight(null);
+  } else if (midi !== null) tapNote({ hasAttribute: () => true }, 'preview');
+}
+async function playSong(song) {
+  if (!song) return;
+  if (playing === song.id) { stop(); return; }
+  stop();
+  const generation = playGeneration;
+  playing = song.id;
+  clearTimeout(practiceTimer);
+  updatePracticeProgress();
+  updatePlaybackButtons();
+  try {
+    await audio.play(song.notes.map((id, i) => ({ midi: NOTES[id].midi + octave, beats: song.beats?.[i] || 1 })), {
+      bpm,
+      onNote(index) {
+        if (generation !== playGeneration) return;
+        $$('.mini-note.current').forEach(el => el.classList.remove('current'));
+        if (index < 0) { highlight(null); return; }
+        const midi = NOTES[song.notes[index]].midi;
+        setFingering(midi);
+        highlight(midi);
+        document.querySelector(`[data-song="${song.id}"]`)?.querySelectorAll('.mini-note')[index]?.classList.add('current');
+        if (selected?.id === song.id) $('#practice-sequence').children[index]?.querySelector('.mini-note').classList.add('current');
+      },
+      onEnd() { if (generation === playGeneration) { playing = null; updatePlaybackButtons(); updatePracticeProgress(); } },
+    });
+  } catch (error) { if (generation === playGeneration) { stop(); toast(error.message); } }
+}
+function customSong() {
+  return { id: 'custom', title: '허수아비의 노래', notes: [...custom] };
+}
+function selectSong(id, persist = true) {
+  stop();
+  selected = id === 'custom' && custom.length === 8 ? customSong() : SONGS.find(song => song.id === id) || null;
+  selectedId = selected?.id || 'free';
+  resetProgress();
+  $('#practice-title').textContent = selected?.title || '자유 연주';
+  $('.performance').dataset.free = String(!selected);
+  $('.selected-actions').hidden = !selected;
+  $('#clear-selection').hidden = !selected;
+  $('#practice-sequence').hidden = !selected;
+  $('#practice-sequence').innerHTML = selected ? selected.notes.map((note, i) => `<span class="practice-step">${miniNote(note)}<small>${i + 1}</small></span>`).join('') : '';
+  $('#score-viewer').replaceChildren();
+  $('#score-link').hidden = !selected?.officialScore;
+  $('#official-play').hidden = !selected?.officialAudio;
+  if (selected?.officialScore) {
+    const img = document.createElement('img');
+    img.src = selected.officialScore;
+    img.alt = `${selected.title} 공식 전체 악보와 운지표`;
+    img.referrerPolicy = 'no-referrer';
+    img.onerror = () => {
+      if (!img.isConnected) return;
+      img.hidden = true;
+      const message = document.createElement('span');
+      message.className = 'score-error';
+      message.textContent = '악보를 불러오지 못했습니다';
+      $('#score-viewer').append(message);
+    };
+    $('#score-viewer').append(img);
+  }
+  if (selected) setFingering(NOTES[selected.notes[0]].midi);
+  updatePracticeProgress();
+  renderSongs();
+  if (persist) try { localStorage.setItem('hyrule-selected-song', selectedId); } catch {}
+}
+function setMenuPage(page) {
+  $$('[data-menu-page]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.menuPage === page)));
+  $$('[data-panel]').forEach(panel => { panel.hidden = panel.dataset.panel !== page; });
+}
+function closeMenu() { if ($('#menu-dialog').open) $('#menu-dialog').close(); }
+function openMenu() {
+  stop();
+  setMenuPage('songs');
+  $('#menu-button').setAttribute('aria-expanded', 'true');
+  $('#menu-dialog').showModal();
+  $('#menu-dialog').scrollTop = 0;
+}
+function renderCustom() {
+  $('#custom-sequence').innerHTML = Array.from({ length: 8 }, (_, i) => `<span class="practice-step"><span class="mini-note ${custom[i] === 'd' ? 'high' : ''}">${custom[i] ? noteLabel(custom[i]) : '·'}</span><small>${i + 1}</small></span>`).join('');
+  $('#custom-play').disabled = custom.length !== 8;
+  $('#custom-select').disabled = custom.length !== 8;
+}
+
+// Pointer capture stops sustained notes reliably when fingers leave a button.
+document.addEventListener('pointerdown', event => {
+  const el = event.target.closest('[data-note], [data-blow]');
+  if (!el || event.button !== 0) return;
+  event.preventDefault();
+  el.setPointerCapture?.(event.pointerId);
+  startHold(el, event.pointerId);
+});
+for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) document.addEventListener(name, event => endHold(event.pointerId));
+document.addEventListener('click', event => {
+  const el = event.target.closest('button');
+  if (!el) return;
+  if (event.detail === 0 && (el.dataset.note || el.hasAttribute('data-blow'))) { tapNote(el, 'accessible'); return; }
+  if (el.dataset.hole) { changeHole(Number(el.dataset.hole)); return; }
+  if (el.dataset.mode) { stop(); mode = el.dataset.mode; renderInstrument(); saveSettings(); return; }
+  if (el.dataset.open) { closeMenu(); selectSong(el.dataset.open); return; }
+  if (el.dataset.play) { playSong(SONGS.find(song => song.id === el.dataset.play)); return; }
+  if (el.dataset.menuPage) { stop(); setMenuPage(el.dataset.menuPage); return; }
+  if (el.dataset.filter) {
+    filter = el.dataset.filter;
+    $$('[data-filter]').forEach(button => { button.classList.toggle('active', button === el); button.setAttribute('aria-pressed', String(button === el)); });
+    renderSongs();
+    return;
+  }
+  if (el.classList.contains('close-dialog')) el.closest('dialog').close();
+});
+for (const dialog of $$('dialog')) {
+  dialog.addEventListener('close', () => {
+    stop();
+    if (dialog.id === 'menu-dialog') $('#menu-button').setAttribute('aria-expanded', 'false');
+    if (!$$('dialog[open]').length) $(dialog.id === 'score-dialog' ? '#score-link' : '#menu-button').focus({ preventScroll: true });
+  });
+  dialog.addEventListener('click', event => {
+    if (event.target !== dialog) return;
+    const rect = dialog.getBoundingClientRect();
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.close();
+  });
+}
+$('#menu-button').onclick = openMenu;
+$('#song-search').oninput = renderSongs;
+$('#clear-selection').onclick = () => selectSong('free');
+$('#free-play').onclick = () => { closeMenu(); selectSong('free'); };
+$('#practice-play').onclick = () => playSong(selected);
+$('#practice-play').title = PLAYBACK_NOTE;
+$('#practice-reset').onclick = () => { stop(); resetProgress(); };
+$('#score-link').onclick = () => {
+  if (!selected?.officialScore) return;
+  stop();
+  $('#expanded-title').textContent = selected.title;
+  $('#expanded-score-image').src = selected.officialScore;
+  $('#expanded-score-image').alt = `${selected.title} 공식 전체 악보`;
+  $('#original-score-link').href = selected.officialScore;
+  $('#score-dialog').showModal();
+};
+$('#official-play').onclick = async () => {
+  if (officialPlaying) { stop(); return; }
+  stop();
+  if (!selected?.officialAudio) return;
+  const generation = playGeneration;
+  media.src = selected.officialAudio;
+  media.volume = volume;
+  officialPlaying = true;
+  updatePlaybackButtons();
+  try { await media.play(); if (generation !== playGeneration) media.pause(); }
+  catch { if (generation === playGeneration) { officialPlaying = false; updatePlaybackButtons(); toast('원곡을 불러오지 못했습니다'); } }
+};
+media.onended = () => { officialPlaying = false; updatePlaybackButtons(); };
+media.onerror = () => { if (officialPlaying) { officialPlaying = false; updatePlaybackButtons(); toast('원곡을 불러오지 못했습니다'); } };
+
+$('#volume').value = volume * 100;
+$('#volume-value').textContent = `${Math.round(volume * 100)}%`;
+media.volume = volume;
+$('#volume').oninput = event => {
+  volume = Number(event.target.value) / 100;
+  audio.setVolume(volume);
+  media.volume = volume;
+  $('#volume-value').textContent = `${Math.round(volume * 100)}%`;
+  saveSettings();
+};
+$('#tempo').value = bpm;
+$('#tempo-value').textContent = `${bpm} BPM`;
+$('#tempo').oninput = event => { bpm = Number(event.target.value); $('#tempo-value').textContent = `${bpm} BPM`; saveSettings(); };
+$('#octave').value = octave;
+$('#octave').onchange = event => { stop(); octave = Number(event.target.value); saveSettings(); };
+$('#haptics').checked = haptics;
+$('#haptics').onchange = event => { haptics = event.target.checked; saveSettings(); };
+
+$('#scarecrow-button').onclick = () => { stop(); closeMenu(); renderCustom(); $('#scarecrow-dialog').showModal(); };
+$('#custom-keys').innerHTML = noteEntries.map(([id, note]) => `<button data-custom="${id}" aria-label="${note.label} 추가">${noteLabel(id)}</button>`).join('');
+$('#custom-keys').onclick = async event => {
+  const button = event.target.closest('[data-custom]');
+  if (!button) return;
+  if (custom.length >= 8) { toast('8음 입력 완료'); return; }
+  custom.push(button.dataset.custom);
+  renderCustom();
+  try { localStorage.setItem('hyrule-scarecrow', JSON.stringify(custom)); } catch {}
+  stop();
+  try { await audio.play([{ midi: NOTES[button.dataset.custom].midi + octave, beats: 0.3 }], { bpm: 100 }); }
+  catch (error) { toast(error.message); }
+};
+$('#custom-clear').onclick = () => {
+  stop(); custom = [];
+  try { localStorage.removeItem('hyrule-scarecrow'); } catch {}
+  if (selected?.id === 'custom') selectSong('free');
+  renderCustom();
+};
+$('#custom-play').onclick = () => playSong(customSong());
+$('#custom-select').onclick = () => { if (custom.length === 8) { $('#scarecrow-dialog').close(); selectSong('custom'); } };
+
+document.addEventListener('keydown', event => {
+  if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.target.closest('input,select,textarea') || $$('dialog[open]').length) return;
+  const note = noteEntries.find(([, value]) => value.key === event.key)?.[0];
+  let el = note ? document.querySelector(`#main-instrument [data-note="${note}"]`) : null;
+  if (!el && [' ', 'Enter'].includes(event.key) && event.target.matches('[data-note],[data-blow]')) el = event.target;
+  if (el) { event.preventDefault(); startHold(el, `key${event.code}`); }
+});
+document.addEventListener('keyup', event => endHold(`key${event.code}`));
+window.addEventListener('blur', () => { if (!officialPlaying) stop(); });
+window.addEventListener('pagehide', stop);
+document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+renderInstrument();
+if (selectedId !== 'free' && selectedId !== 'custom' && !SONGS.some(song => song.id === selectedId)) selectedId = SONGS[0].id;
+selectSong(selectedId, false);
+
+window.ocarinaState = () => ({ mode, playing, officialPlaying, selected: selected?.id ?? null, progress, closed: [...closed], currentMidi: getMidiForHoles(closed), activeMidi: audio.lastMidi, contextState: audio.context?.state ?? 'not-started', activeVoice: audio.activeVoice, heldPointers: holds.size, custom: [...custom], volume, octave });

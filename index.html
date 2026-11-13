@@ -1,40 +1,79 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#101d1a"><meta name="description" content="손끝에서 깨어나는 하이랄의 선율. 휴대폰으로 연주하는 시간의 오카리나와 12곡의 공식 악보.">
-  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml"><link rel="manifest" href="./manifest.webmanifest">
-  <title>시간의 오카리나 · Hyrule Melody</title><link rel="stylesheet" href="./style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101d1a">
+  <meta name="description" content="휴대폰으로 연주하는 시간의 오카리나. 12곡의 악보와 공식 굿즈 운지.">
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <title>시간의 오카리나 · Hyrule Melody</title>
+  <link rel="stylesheet" href="./style.css?v=20261113-landscape">
 </head>
-<body>
-  <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-  <header class="site-header"><a class="brand" href="#" aria-label="시간의 오카리나 홈"><span class="crest" aria-hidden="true">✦</span><span>HYRULE <b>MELODY</b></span></a><div class="header-actions"><span class="fan-label">A FAN-MADE COMPANION</span><button class="icon-button" id="help-button" aria-label="사용 안내">?</button><button class="icon-button" id="settings-button" aria-label="연주 설정">⚙</button></div></header>
-  <main>
-    <section class="intro"><div class="eyebrow"><span></span> THE LEGEND AWAKENS <span></span></div><h1>시간의 오카리나</h1><p class="subtitle">Ocarina of Time</p><p class="intro-copy">시간을 건너는 선율, 이제 당신의 손끝에서.</p><a class="songbook-jump" href="#songbook-heading">12곡 악보집 펼치기 ↓</a></section>
-    <div class="workspace">
-      <section class="instrument-shell" aria-labelledby="instrument-heading">
-        <div class="panel-heading"><div><p class="section-kicker">YOUR INSTRUMENT</p><h2 id="instrument-heading">오카리나 연주</h2></div><span class="live-status"><i></i><span id="sound-status">연주 준비</span></span></div>
-        <div class="instrument-modes" aria-label="연주 방식"><button class="active" data-mode="merch" aria-pressed="true">공식 굿즈 배열</button><button data-mode="simple" aria-pressed="false">간편 5음</button></div>
-        <div id="main-instrument" class="instrument-mount"></div>
-        <div class="played-notes" aria-label="최근 연주한 음"><span id="played-label">음표를 터치해 선율을 만들어 보세요</span><div id="played-notes"></div></div>
-        <div class="instrument-footer"><button class="text-button" id="clear-button">↺ 연주 초기화</button><span id="pitch-display">A4 = 440 Hz</span><button class="text-button" id="mute-button" aria-pressed="false">♫ 소리 켜짐</button></div>
-        <div class="connection-tip"><span class="tip-symbol">♪</span><p>Switch 2의 <strong>오카리나 소리 입력</strong>을 켜고<br>휴대폰 스피커를 본체 마이크 가까이에 두세요.</p><button id="connection-help" aria-label="게임 연결 안내">↗</button></div>
-      </section>
-      <section class="songbook" aria-labelledby="songbook-heading">
-        <div class="songbook-title"><div><p class="section-kicker">THE SONGBOOK</p><h2 id="songbook-heading">기억 속의 선율 <span>12</span></h2></div><span class="collection-label">OCARINA COLLECTION</span></div>
-        <div class="library-toolbar"><div class="filters" aria-label="곡 분류"><button class="active" data-filter="all" aria-pressed="true">모든 곡 <span>12</span></button><button data-filter="utility" aria-pressed="false">모험의 노래</button><button data-filter="warp" aria-pressed="false">워프의 선율</button></div><button class="icon-button" id="search-toggle" aria-label="곡 검색">⌕</button></div>
-        <div class="search-wrap" hidden><label for="song-search" class="sr-only">곡 이름 또는 효과 검색</label><input id="song-search" type="search" placeholder="곡 이름 또는 효과 검색…" autocomplete="off"></div>
-        <div id="song-list" class="song-list"></div><p id="empty-results" class="empty-results" hidden>일치하는 선율이 없습니다.</p>
-        <button class="scarecrow-card" id="scarecrow-button"><span class="scarecrow-icon">♧</span><span><strong>허수아비의 노래</strong><small>나만의 8음 선율을 기억하고 연주하세요</small></span><span>＋</span></button>
-      </section>
-    </div>
-    <footer class="site-footer"><span class="footer-ornament">✦</span><p>작은 선율이, 다시 모험을 시작하게 하니까.</p><div><span>비공식 팬 프로젝트</span><span>·</span><a href="https://www.nintendo.com/jp/games/switch2/aa9ja/melody/index.html" target="_blank" rel="noopener noreferrer">닌텐도 공식 악보 ↗</a><span>·</span><button class="text-button" id="sources-button">자료 및 음원 안내</button></div></footer>
+<body class="play-app">
+  <header class="play-header">
+    <span class="brand"><span class="crest" aria-hidden="true">✦</span> 시간의 오카리나</span>
+    <button class="icon-button" id="menu-button" aria-label="메뉴 열기" aria-haspopup="dialog" aria-controls="menu-dialog" aria-expanded="false"><span class="hamburger" aria-hidden="true"><i></i><i></i><i></i></span></button>
+  </header>
+  <main class="performance">
+    <section class="instrument-stage" aria-label="오카리나 연주">
+      <div id="main-instrument" class="instrument-mount"></div>
+    </section>
+    <section class="selected-score" aria-labelledby="practice-title">
+      <div class="selected-heading"><h1 id="practice-title">젤다의 자장가</h1><button class="icon-button" id="clear-selection" aria-label="악보 접고 자유 연주">✕</button></div>
+      <div class="selected-actions">
+        <button class="primary-button" id="practice-play">▶ 재생</button>
+        <button class="secondary-button" id="official-play">♫ 원곡</button>
+        <button class="icon-button" id="practice-reset" aria-label="연습 다시 시작">↺</button>
+      </div>
+      <div id="practice-sequence" class="practice-sequence" aria-label="연주 순서"></div>
+      <span id="practice-progress-label" class="sr-only" role="status"></span>
+      <button class="score-link" id="score-link" aria-label="선택한 악보 크게 보기"><span id="score-viewer" class="score-viewer"></span><span class="score-expand" aria-hidden="true">⤢</span></button>
+      <div id="score-empty" hidden></div>
+    </section>
   </main>
-  <dialog id="practice-dialog" class="practice-dialog"><div class="practice-content"><div class="modal-header"><div><p class="section-kicker">PLAY THE MELODY</p><h2 id="practice-title"></h2></div><button class="icon-button close-dialog" aria-label="악보 닫기">✕</button></div><p id="practice-effect"></p><div class="practice-tools"><button class="primary-button" id="practice-play">▶ 입력 구절 재생</button><button class="secondary-button" id="official-play">♫ 공식 전체곡 듣기</button></div><div id="practice-sequence" class="practice-sequence" aria-label="연주 순서"></div><div class="practice-progress"><span id="practice-progress-label">차례대로 음을 누르세요</span><button class="text-button" id="practice-reset">다시 연습</button></div><div class="score-header"><span>공식 전체 악보</span><a id="score-link" target="_blank" rel="noopener noreferrer">원본 크게 보기 ↗</a></div><div id="score-viewer" class="score-viewer"></div><p class="score-caption">Nintendo 공식 사이트에서 불러오는 원본 악보 · 가로 화면에서 더 크게 볼 수 있어요</p><div id="practice-instrument" class="instrument-mount"></div></div></dialog>
-  <dialog id="settings-dialog" class="small-dialog"><div class="modal-header"><h2>연주 설정</h2><button class="icon-button close-dialog" aria-label="설정 닫기">✕</button></div><label class="setting-row">음량 <output id="volume-value">70%</output><input id="volume" type="range" min="0" max="100" value="70"></label><label class="setting-row">입력 구절 속도 <output id="tempo-value">100 BPM</output><input id="tempo" type="range" min="50" max="160" step="5" value="100"></label><label class="setting-row">음높이 조정<select id="octave"><option value="0">기본 음역 · D5–D6</option><option value="-12">한 옥타브 낮게 · D4–D5</option><option value="12">한 옥타브 높게 · D6–D7</option></select></label><label class="checkbox-row"><input id="haptics" type="checkbox" checked> 터치 진동 <small>지원하는 기기에서만 작동</small></label><p class="muted">이어폰보다 휴대폰 스피커를 사용하세요. 게임 인식이 어려우면 음량과 본체 마이크와의 거리를 조절해 보세요.</p></dialog>
-  <dialog id="help-dialog" class="small-dialog"><div class="modal-header"><h2>모험을 위한 작은 안내</h2><button class="icon-button close-dialog" aria-label="안내 닫기">✕</button></div><ol class="help-steps"><li><strong>게임에서 오카리나를 꺼내세요.</strong><p>Switch 2 리메이크의 소리 입력 기능을 켭니다. 게임에서 이미 배운 노래만 인식됩니다.</p></li><li><strong>휴대폰 스피커를 가까이 두세요.</strong><p>본체 마이크를 향하도록 놓고 적당한 음량으로 시작하세요. 휴대폰 마이크 권한은 필요하지 않습니다.</p></li><li><strong>한 번 눌러 재생하거나 직접 연주하세요.</strong><p>곡 옆 ▶ 버튼으로 입력 구절을 재생합니다. 곡 이름을 누르면 전체 악보와 연습 화면이 열립니다.</p></li></ol><p class="muted">iPhone에서는 첫 터치 후 소리가 활성화됩니다. 소리가 작으면 미디어 음량과 무음 모드를 확인하세요. 실제 Switch 2 인식 여부는 기기에서 확인해 주세요.</p><a class="source-link" href="https://www.nintendo.com/jp/games/switch2/aa9ja/melody/index.html" target="_blank" rel="noopener noreferrer">Nintendo 공식 소리 입력 안내 ↗</a></dialog>
-  <dialog id="sources-dialog" class="small-dialog"><div class="modal-header"><h2>자료 및 음원 안내</h2><button class="icon-button close-dialog" aria-label="자료 안내 닫기">✕</button></div><div class="source-copy"><p>이 앱은 Nintendo 및 HORI와 무관한 비공식 팬 도구입니다.</p><p><strong>전체 악보와 전체곡</strong>은 Nintendo 공식 서버의 원본을 직접 표시·재생합니다. 앱 서버에 복제해 보관하지 않습니다. 원본 사이트가 변경되거나 오프라인일 때는 제공되지 않을 수 있습니다.</p><p><strong>직접 연주와 입력 구절</strong>은 게임의 기본 음높이에 맞춘 합성 오카리나 소리입니다. 게임에서 추출한 음원이 아니며 원본과 동일한 음색을 보장하지 않습니다.</p><p id="merch-source-note"></p><a href="https://hori.jp/manual/nsx-261/" target="_blank" rel="noopener noreferrer">HORI 공식 굿즈 매뉴얼 ↗</a><a href="https://www.nintendo.com/jp/games/switch2/aa9ja/melody/index.html" target="_blank" rel="noopener noreferrer">Nintendo 공식 전체 악보·음원 ↗</a></div></dialog>
-  <dialog id="scarecrow-dialog" class="small-dialog"><div class="modal-header"><h2>허수아비의 노래</h2><button class="icon-button close-dialog" aria-label="허수아비 노래 닫기">✕</button></div><p class="muted">게임에서 정한 8음을 같은 순서로 저장하세요. 이 기기의 브라우저에만 보관됩니다.</p><div id="custom-sequence" class="practice-sequence"></div><div id="custom-keys" class="custom-keys"></div><div class="practice-tools"><button id="custom-clear" class="secondary-button">다시 입력</button><button id="custom-play" class="primary-button" disabled>▶ 저장한 선율 재생</button></div><p class="muted">정해진 악보가 없는 사용자 지정곡입니다. 리메이크의 소리 입력 지원 여부는 게임에서 확인하세요.</p></dialog>
-  <div id="toast" role="status" class="toast"></div><audio id="official-audio" preload="none"></audio>
-  <script type="module" src="./app.js"></script>
-</body></html>
+
+  <dialog id="menu-dialog" class="menu-dialog" aria-labelledby="menu-title">
+    <div class="modal-header"><h2 id="menu-title">메뉴</h2><button class="icon-button close-dialog" aria-label="메뉴 닫기">✕</button></div>
+    <nav class="menu-tabs" aria-label="메뉴 항목">
+      <button data-menu-page="songs" aria-pressed="true">악보</button>
+      <button data-menu-page="settings" aria-pressed="false">설정</button>
+      <button data-menu-page="sources" aria-pressed="false">자료</button>
+    </nav>
+    <section class="menu-panel" data-panel="songs" aria-label="악보 목록">
+      <div class="library-toolbar"><div class="filters" aria-label="곡 분류"><button class="active" data-filter="all" aria-pressed="true">전체 12</button><button data-filter="utility" aria-pressed="false">모험</button><button data-filter="warp" aria-pressed="false">워프</button></div><button class="text-button" id="free-play">자유 연주</button></div>
+      <div class="search-wrap"><label for="song-search" class="sr-only">곡 검색</label><input id="song-search" type="search" placeholder="곡 검색" autocomplete="off"></div>
+      <div id="song-list" class="song-list"></div><p id="empty-results" class="empty-results" hidden>검색 결과 없음</p>
+      <button class="scarecrow-card" id="scarecrow-button"><span aria-hidden="true">♧</span><strong>허수아비의 노래</strong><span aria-hidden="true">＋</span></button>
+    </section>
+    <section class="menu-panel" data-panel="settings" aria-label="연주 설정" hidden>
+      <div class="instrument-modes" aria-label="연주 방식"><button data-mode="merch" aria-pressed="true">공식 굿즈 배열</button><button data-mode="simple" aria-pressed="false">간편 5음</button></div>
+      <label class="setting-row">음량 <output id="volume-value">70%</output><input id="volume" type="range" min="0" max="100" value="70"></label>
+      <label class="setting-row">연주 속도 <output id="tempo-value">100 BPM</output><input id="tempo" type="range" min="50" max="160" step="5" value="100"></label>
+      <label class="setting-row">음높이<select id="octave"><option value="0">기본 · D5–D6</option><option value="-12">한 옥타브 낮게</option><option value="12">한 옥타브 높게</option></select></label>
+      <label class="checkbox-row"><input id="haptics" type="checkbox" checked> 터치 진동</label>
+    </section>
+    <section class="menu-panel source-copy" data-panel="sources" aria-label="자료 안내" hidden>
+      <p>비공식 팬 프로젝트. 직접 연주음은 합성음입니다.</p>
+      <p>전체 악보와 원곡은 Nintendo 공식 서버에서 불러옵니다.</p>
+      <a href="https://www.nintendo.com/jp/games/switch2/aa9ja/melody/index.html" target="_blank" rel="noopener noreferrer">Nintendo 공식 악보·음원 ↗</a>
+      <a href="https://hori.jp/manual/nsx-261/" target="_blank" rel="noopener noreferrer">HORI 공식 운지표 ↗</a>
+    </section>
+  </dialog>
+
+  <dialog id="scarecrow-dialog" class="small-dialog" aria-labelledby="custom-title">
+    <div class="modal-header"><h2 id="custom-title">허수아비의 노래</h2><button class="icon-button close-dialog" aria-label="허수아비 노래 닫기">✕</button></div>
+    <div id="custom-sequence" class="practice-sequence" aria-label="사용자 지정 8음"></div>
+    <div id="custom-keys" class="custom-keys"></div>
+    <div class="practice-tools"><button id="custom-clear" class="secondary-button">초기화</button><button id="custom-play" class="secondary-button" disabled>▶ 재생</button><button id="custom-select" class="primary-button" disabled>선택</button></div>
+  </dialog>
+
+  <dialog id="score-dialog" class="score-dialog" aria-labelledby="expanded-title">
+    <div class="modal-header"><h2 id="expanded-title"></h2><a id="original-score-link" target="_blank" rel="noopener noreferrer">원본 ↗</a><button class="icon-button close-dialog" aria-label="확대 악보 닫기">✕</button></div>
+    <div class="expanded-score"><img id="expanded-score-image" alt="" referrerpolicy="no-referrer"></div>
+  </dialog>
+  <div id="toast" role="status" class="toast"></div>
+  <audio id="official-audio" preload="none"></audio>
+  <script type="module" src="./app.js?v=20261113-landscape"></script>
+</body>
+</html>
