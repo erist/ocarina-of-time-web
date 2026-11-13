@@ -9,3 +9,7 @@
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 .score-viewer img{display:block;width:100%;height:auto;min-height:100px}.score-error{color:#473d2a;font-size:12px;padding:20px}.score-viewer{min-height:110px}.practice-content .score-viewer{align-self:start}
+@media(max-width:760px){.small-dialog .practice-sequence{gap:5px}.small-dialog .practice-step .mini-note{width:25px;height:25px;font-size:10px}.practice-content .ocarina-scene{aspect-ratio:1.5}.practice-content .hole{width:32px;height:32px}.practice-content .hole.small{width:25px;height:25px}}
+@media(max-width:370px){.practice-sequence{gap:5px}.practice-step .mini-note{width:27px;height:27px;font-size:10px}.practice-content .hole{width:29px;height:29px}.practice-content .hole.small{width:24px;height:24px}.practice-content .ocarina-scene{aspect-ratio:1.4}}
+
+.songbook-jump{font-size:11px;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:4px;display:inline-block}#songbook-heading{scroll-margin-top:24px}
