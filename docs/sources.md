@@ -36,3 +36,10 @@
 
 - MDN Pointer events: https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events
 - 각 손가락의 pointerId, pointer capture, pointercancel과 touch-action:none을 사용합니다. navigator.maxTouchPoints로 브라우저가 알리는 지원 접점 수를 표시하며 실제 기기의 시스템 제스처·터치 성능까지 보장하지 않습니다.
+
+
+## 공식 타이틀 로고
+
+- 한국닌텐도 리메이크 공식 사이트: https://www.nintendo.com/kr/games/switch2/aa9ja/index.html
+- 사이트 메인 타이틀에서 연결된 원본: https://www.nintendo.com/kr/games/switch2/aa9ja/assets/img/top/mv_logo.webp
+- 2026-11-13 공식 페이지 연결과 브라우저 이미지 로딩(1590×1270)을 확인. 원본을 변경하거나 저장소에 복제하지 않고 직접 표시합니다.
