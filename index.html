@@ -8,9 +8,10 @@
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="./manifest.webmanifest">
   <title>시간의 오카리나 · Hyrule Melody</title>
-  <link rel="stylesheet" href="./style.css?v=20261113-logo-icons">
+  <link rel="stylesheet" href="./style.css?v=20261113-two-touch">
 </head>
 <body class="play-app">
+  <div id="play-surface" class="play-surface">
   <header class="play-header">
     <img class="brand" src="https://www.nintendo.com/kr/games/switch2/aa9ja/assets/img/top/mv_logo.webp" alt="젤다의 전설 시간의 오카리나" width="1590" height="1270" referrerpolicy="no-referrer" fetchpriority="high">
     <button class="icon-button" id="menu-button" aria-label="메뉴 열기" aria-haspopup="dialog" aria-controls="menu-dialog" aria-expanded="false"><span class="hamburger" aria-hidden="true"><i></i><i></i><i></i></span></button>
@@ -23,7 +24,6 @@
       <div class="selected-heading"><h1 id="practice-title">젤다의 자장가</h1><button class="icon-button" id="clear-selection" aria-label="악보 접고 자유 연주">✕</button></div>
       <div class="selected-actions">
         <button class="icon-button" id="practice-play" aria-label="선택한 곡 재생" title="선택한 곡 재생">▶</button>
-        <button class="icon-button" id="official-play" aria-label="공식 원곡 듣기" title="공식 원곡 듣기">♫</button>
         <button class="icon-button" id="practice-reset" aria-label="연습 다시 시작" title="연습 다시 시작">↺</button>
       </div>
       <div id="practice-sequence" class="practice-sequence" aria-label="연주 순서"></div>
@@ -32,12 +32,14 @@
       <div id="score-empty" hidden></div>
     </section>
   </main>
+  </div>
 
   <dialog id="menu-dialog" class="menu-dialog" aria-labelledby="menu-title">
     <div class="modal-header"><h2 id="menu-title">메뉴</h2><button class="icon-button close-dialog" aria-label="메뉴 닫기">✕</button></div>
     <nav class="menu-tabs" aria-label="메뉴 항목">
       <button data-menu-page="songs" aria-pressed="true" aria-label="악보" title="악보"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13M9 9l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="16" rx="3" ry="2"/></svg></button>
       <button data-menu-page="settings" aria-pressed="false" aria-label="설정" title="설정"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 3-.5 3-2 .9L5 5.5 2.5 9l2.2 2v2L2.5 15 5 18.5 7.5 17l2 .9.5 3h4l.5-3 2-.9 2.5 1.5 2.5-3.5-2.2-2v-2l2.2-2L19 5.5 16.5 7l-2-.9L14 3Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+<button data-menu-page="fingering" aria-pressed="false" aria-label="음계와 운지" title="음계와 운지"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 20V7m4 13V4m4 16V6m4 14V9"/><circle cx="6" cy="12" r="2"/><circle cx="10" cy="9" r="2"/><circle cx="14" cy="15" r="2"/><circle cx="18" cy="12" r="2"/></svg></button>
       <button data-menu-page="sources" aria-pressed="false" aria-label="자료" title="자료"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.1"/></svg></button>
     </nav>
     <section class="menu-panel" data-panel="songs" aria-label="악보 목록">
@@ -47,17 +49,25 @@
       <button class="scarecrow-card" id="scarecrow-button"><span aria-hidden="true">♧</span><strong>허수아비의 노래</strong><span aria-hidden="true">＋</span></button>
     </section>
     <section class="menu-panel" data-panel="settings" aria-label="연주 설정" hidden>
-      <div class="instrument-modes" aria-label="연주 방식"><button data-mode="merch" aria-pressed="true" aria-label="공식 굿즈 배열" title="공식 굿즈 배열"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 17c8-6 12-7 17-4 4 2 3 6-1 7-5 1-11-1-16-3Z M13 11l2-7 4 1-1 7"/><circle cx="10" cy="15" r=".7"/><circle cx="15" cy="17" r=".7"/></svg></button><button data-mode="simple" aria-pressed="false" aria-label="간편 5음" title="간편 5음"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6M8 6v12M12 3v18M16 6v12M20 9v6"/></svg></button></div>
-      <div class="instrument-modes input-modes" aria-label="운지 입력"><button data-input-mode="direct" aria-pressed="false" aria-label="직접 운지" title="직접 운지"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 13V7a1.5 1.5 0 0 1 3 0v5-8a1.5 1.5 0 0 1 3 0v8-6a1.5 1.5 0 0 1 3 0v7-4a1.5 1.5 0 0 1 3 0v7c0 4-2 6-6 6-3 0-4-1-6-4l-3-4a1.5 1.5 0 0 1 2-2Z"/></svg></button><button data-input-mode="tap" aria-pressed="true" aria-label="탭 운지" title="탭 운지"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14V8a2 2 0 0 1 4 0v5l3-1 3 3-2 6h-7l-5-6a1.5 1.5 0 0 1 2-2Z M6 7a6 6 0 0 1 12 0"/></svg></button></div>
+      <label class="setting-row">화면 방향<select id="rotation-mode"><option value="right">세로 고정 → 가로 연주 ↻</option><option value="left">세로 고정 → 가로 연주 ↺</option><option value="auto">브라우저 방향 그대로</option></select></label>
+      <label class="setting-row">운지 방식<select id="instrument-mode"><option value="touch">두 손가락 · 게임 19음</option><option value="merch">공식 12구멍 · 전체 25음</option><option value="simple">기본 버튼 · 5음</option></select></label>
+      <label class="setting-row" id="advanced-input">구멍 입력<select id="input-mode"><option value="tap">탭해서 닫힘 유지</option><option value="direct">누르는 동안 닫힘</option></select></label>
       <p id="input-hint" class="input-hint"></p><p id="touch-capability" class="touch-capability"></p>
       <label class="setting-row">음량 <output id="volume-value">70%</output><input id="volume" type="range" min="0" max="100" value="70"></label>
-      <label class="setting-row">연주 속도 <output id="tempo-value">100 BPM</output><input id="tempo" type="range" min="50" max="160" step="5" value="100"></label>
-      <label class="setting-row">음높이<select id="octave"><option value="0">기본 · D5–D6</option><option value="-12">한 옥타브 낮게</option><option value="12">한 옥타브 높게</option></select></label>
+      <label class="setting-row">재생 속도 <output id="tempo-value">100%</output><input id="tempo" type="range" min="50" max="160" step="5" value="100"></label>
+      <label class="setting-row">직접 연주 음높이<select id="octave"><option value="0">기본 · B4–F6</option><option value="-12">한 옥타브 낮게</option><option value="12">한 옥타브 높게</option></select></label>
       <label class="checkbox-row"><input id="haptics" type="checkbox" checked> 터치 진동</label>
     </section>
+    <section class="menu-panel guide-panel" data-panel="fingering" aria-label="음계와 운지" hidden>
+      <h3>게임 19음</h3>
+      <p class="guide-intro">기본음 버튼을 누른 채 다른 손가락으로 −3…+3을 조절하세요. 숫자 1칸은 반음입니다. B는 연주 종료입니다.</p>
+      <p class="guide-legend">● 닫음 · ○ 열림 · 아래 두 구멍은 뒷면</p>
+      <div class="scale-scroll"><table class="scale-table"><thead><tr><th>음</th><th>두 손가락</th><th>컨트롤러</th><th>실물 운지</th><th><span class="sr-only">미리 듣기</span></th></tr></thead><tbody id="scale-guide"></tbody></table></div>
+      <details class="extra-scale"><summary>실물·전자 오카리나 추가 6음</summary><div class="scale-scroll"><table class="scale-table"><thead><tr><th>음</th><th>실물 운지</th><th><span class="sr-only">미리 듣기</span></th></tr></thead><tbody id="extra-scale-guide"></tbody></table></div><p class="guide-intro">게임 범위 밖의 음입니다. 높은 파♯ 이상은 HORI 전자 악기의 확장 운지입니다.</p></details>
+    </section>
     <section class="menu-panel source-copy" data-panel="sources" aria-label="자료 안내" hidden>
-      <p>비공식 팬 프로젝트. 직접 연주음은 합성음입니다.</p>
-      <p>로고·전체 악보·원곡은 Nintendo 공식 서버에서 불러옵니다.</p>
+      <p>비공식 팬 프로젝트. 직접 연주음은 공개 녹음을 분석해 조정한 합성음입니다. 원본과 완전히 같은 음색은 아닙니다.</p>
+      <p>곡 재생은 100% 속도에서 Nintendo 공식 녹음의 음색·박자를 그대로 사용합니다. 로고·전체 악보·음원은 공식 서버에서 불러옵니다.</p>
       <a href="https://www.nintendo.com/kr/games/switch2/aa9ja/index.html" target="_blank" rel="noopener noreferrer">Nintendo 공식 로고 출처 ↗</a>
       <a href="https://www.nintendo.com/jp/games/switch2/aa9ja/melody/index.html" target="_blank" rel="noopener noreferrer">Nintendo 공식 악보·음원 ↗</a>
       <a href="https://hori.jp/manual/nsx-261/" target="_blank" rel="noopener noreferrer">HORI 공식 운지표 ↗</a>
@@ -77,6 +87,6 @@
   </dialog>
   <div id="toast" role="status" class="toast"></div>
   <audio id="official-audio" preload="none"></audio>
-  <script type="module" src="./app.js?v=20261113-logo-icons"></script>
+  <script type="module" src="./app.js?v=20261113-two-touch"></script>
 </body>
 </html>

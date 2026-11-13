@@ -24,7 +24,9 @@ body {
     var(--bg);
   font: 14px/1.55 -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
 }
-.play-app { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+.play-app { height: 100vh; height: 100dvh; overflow: hidden; }
+.play-surface { position: fixed; left: 50%; top: 50%; width: var(--play-width, 100vw); height: var(--play-height, 100dvh); transform: translate(-50%, -50%) rotate(var(--play-angle, 0deg)); display: flex; flex-direction: column; container-type: size; }
+.performance { touch-action: none; }
 button, input, select { font: inherit; }
 button, a, input, select { -webkit-tap-highlight-color: transparent; }
 button { border: 0; color: inherit; cursor: pointer; touch-action: manipulation; }
@@ -42,10 +44,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* The whole viewport is the instrument, with the score in its open space. */
 .play-header {
-  position: fixed; inset: max(9px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) auto max(20px, env(safe-area-inset-left));
+  position: absolute; inset: max(9px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) auto max(20px, env(safe-area-inset-left));
   z-index: 5; display: flex; align-items: center; justify-content: flex-end; pointer-events: none;
 }
-.brand { position: absolute; top: -8px; left: 53%; transform: translateX(-50%); display: block; width: clamp(140px, 21vw, 220px); height: 112px; object-fit: contain; filter: drop-shadow(0 2px 7px #06120eaa); }
+.brand { position: absolute; top: -8px; left: 53%; transform: translateX(-50%); display: block; width: clamp(140px, 21cqw, 220px); height: 112px; object-fit: contain; filter: drop-shadow(0 2px 7px #06120eaa); }
 .control-icon { display: block; width: 22px; height: 22px; margin: auto; }
 .icon-button {
   width: 44px; height: 44px; display: inline-grid; place-items: center; flex: 0 0 auto;
@@ -125,7 +127,7 @@ body[data-input='direct'] .mouth-button { display: none; }
 /* The selected sheet sits behind the instrument, without a separate panel. */
 .selected-score {
   position: absolute; z-index: 1; top: max(18px, env(safe-area-inset-top)); left: max(28px, env(safe-area-inset-left));
-  width: min(41vw, 560px); min-width: 0; color: #d7d2b9;
+  width: min(41cqw, 560px); min-width: 0; color: #d7d2b9;
 }
 .selected-heading { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
 .selected-heading h1 { margin: 0; font: 500 clamp(17px, 2.1vw, 28px)/1.5 var(--serif); letter-spacing: -.7px; }
@@ -235,95 +237,125 @@ dialog::backdrop { background: #040e0bd4; backdrop-filter: blur(7px); }
 .scarecrow-card > strong { flex: 1; }
 
 /* Landscape keeps the playing surface edge to edge, including short phones. */
-@media (orientation: landscape) and (max-height: 600px) {
-  .play-header { top: max(7px, env(safe-area-inset-top)); }
-  .ocarina-scene { top: max(25px, env(safe-area-inset-top)); bottom: max(62px, calc(env(safe-area-inset-bottom) + 52px)); }
-  .hole { width: 47px; height: 47px; font-size: 14px; }
-  .hole.small { width: 33px; height: 33px; font-size: 11px; }
-  .mouth-button { height: 44px; width: 49px; font-size: 11px; }
-  .instrument-dock { bottom: max(8px, env(safe-area-inset-bottom)); gap: 22px; }
-  .thumb-row { gap: 8px; }
-  .thumb-row .hole { width: 42px; height: 42px; }
-  .quick-notes { gap: 7px; }
-  .note-key { width: 49px; height: 44px; border-radius: 5px; }
-  .note-key strong { font-size: 13px; }
-  .note-key small { font-size: 8px; }
-  .selected-score { top: max(11px, env(safe-area-inset-top)); left: max(22px, env(safe-area-inset-left)); width: 40vw; }
-  .selected-heading h1 { font-size: 19px; }
-  .selected-actions { margin: 1px 0; gap: 6px; }
-  .selected-actions .primary-button, .selected-actions .secondary-button { font-size: 11px; }
-  .selected-score .practice-sequence { gap: 6px; margin-bottom: 6px; }
-  .selected-score .practice-step .mini-note { width: 24px; height: 24px; }
-  .decor-ocarina { top: 25px; bottom: 62px; height: calc(100% - 87px); }
-  .simple-scene .quick-notes { gap: 14px; bottom: max(8px, env(safe-area-inset-bottom)); }
-  .simple-scene .note-key { width: 49px; height: 44px; }
-  dialog { max-height: calc(100dvh - 16px); }
-  .modal-header { padding-top: 12px; padding-bottom: 6px; }
-  .menu-tabs button { min-height: 40px; }
-  .menu-panel { padding-top: 10px; }
-  .score-dialog .modal-header { padding: 6px 18px; }
-  .expanded-score { padding: 0 16px 16px; }
-}
 
-@media (orientation: landscape) and (max-width: 740px) {
-  .ocarina-scene { left: max(7px, env(safe-area-inset-left)); right: max(7px, env(safe-area-inset-right)); }
-  .selected-score { left: max(18px, env(safe-area-inset-left)); width: 41vw; }
-  .selected-heading h1 { font-size: 17px; }
-  .selected-heading .icon-button { width: 28px; }
-  .selected-actions { gap: 3px; }
-  .selected-score .practice-sequence { gap: 5px; }
-  .selected-score .practice-step .mini-note { width: 23px; height: 23px; font-size: 9px; }
-  .instrument-dock { gap: 15px; }
-  .thumb-row > span { display: none; }
-  .quick-notes { gap: 6px; }
-  .note-key { width: 47px; }
-  .hole { width: 44px; height: 44px; }
-  .hole.small { width: 31px; height: 31px; }
-}
+  body[data-layout='landscape'] .play-header { top: max(7px, env(safe-area-inset-top)); }
+  body[data-layout='landscape'] .ocarina-scene { top: max(25px, env(safe-area-inset-top)); bottom: max(62px, calc(env(safe-area-inset-bottom) + 52px)); }
+  body[data-layout='landscape'] .hole { width: 47px; height: 47px; font-size: 14px; }
+  body[data-layout='landscape'] .hole.small { width: 33px; height: 33px; font-size: 11px; }
+  body[data-layout='landscape'] .mouth-button { height: 44px; width: 49px; font-size: 11px; }
+  body[data-layout='landscape'] .instrument-dock { bottom: max(8px, env(safe-area-inset-bottom)); gap: 22px; }
+  body[data-layout='landscape'] .thumb-row { gap: 8px; }
+  body[data-layout='landscape'] .thumb-row .hole { width: 42px; height: 42px; }
+  body[data-layout='landscape'] .quick-notes { gap: 7px; }
+  body[data-layout='landscape'] .note-key { width: 49px; height: 44px; border-radius: 5px; }
+  body[data-layout='landscape'] .note-key strong { font-size: 13px; }
+  body[data-layout='landscape'] .note-key small { font-size: 8px; }
+  body[data-layout='landscape'] .selected-score { top: max(11px, env(safe-area-inset-top)); left: max(22px, env(safe-area-inset-left)); width: 40cqw; }
+  body[data-layout='landscape'] .selected-heading h1 { font-size: 19px; }
+  body[data-layout='landscape'] .selected-actions { margin: 1px 0; gap: 6px; }
+  body[data-layout='landscape'] .selected-actions .primary-button, body[data-layout='landscape'] .selected-actions .secondary-button { font-size: 11px; }
+  body[data-layout='landscape'] .selected-score .practice-sequence { gap: 6px; margin-bottom: 6px; }
+  body[data-layout='landscape'] .selected-score .practice-step .mini-note { width: 24px; height: 24px; }
+  body[data-layout='landscape'] .decor-ocarina { top: 25px; bottom: 62px; height: calc(100% - 87px); }
+  body[data-layout='landscape'] .simple-scene .quick-notes { gap: 14px; bottom: max(8px, env(safe-area-inset-bottom)); }
+  body[data-layout='landscape'] .simple-scene .note-key { width: 49px; height: 44px; }
+  body[data-layout='landscape'] dialog { max-height: calc(100dvh - 16px); }
+  body[data-layout='landscape'] .modal-header { padding-top: 12px; padding-bottom: 6px; }
+  body[data-layout='landscape'] .menu-tabs button { min-height: 40px; }
+  body[data-layout='landscape'] .menu-panel { padding-top: 10px; }
+  body[data-layout='landscape'] .score-dialog .modal-header { padding: 6px 18px; }
+  body[data-layout='landscape'] .expanded-score { padding: 0 16px 16px; }
+
+
+  body[data-layout='landscape'][data-compact='true'] .ocarina-scene { left: max(7px, env(safe-area-inset-left)); right: max(7px, env(safe-area-inset-right)); }
+  body[data-layout='landscape'][data-compact='true'] .selected-score { left: max(18px, env(safe-area-inset-left)); width: 41cqw; }
+  body[data-layout='landscape'][data-compact='true'] .selected-heading h1 { font-size: 17px; }
+  body[data-layout='landscape'][data-compact='true'] .selected-heading .icon-button { width: 28px; }
+  body[data-layout='landscape'][data-compact='true'] .selected-actions { gap: 3px; }
+  body[data-layout='landscape'][data-compact='true'] .selected-score .practice-sequence { gap: 5px; }
+  body[data-layout='landscape'][data-compact='true'] .selected-score .practice-step .mini-note { width: 23px; height: 23px; font-size: 9px; }
+  body[data-layout='landscape'][data-compact='true'] .instrument-dock { gap: 15px; }
+  body[data-layout='landscape'][data-compact='true'] .thumb-row > span { display: none; }
+  body[data-layout='landscape'][data-compact='true'] .quick-notes { gap: 6px; }
+  body[data-layout='landscape'][data-compact='true'] .note-key { width: 47px; }
+  body[data-layout='landscape'][data-compact='true'] .hole { width: 44px; height: 44px; }
+  body[data-layout='landscape'][data-compact='true'] .hole.small { width: 31px; height: 31px; }
 
 /* Portrait uses the same single stage, with the sheet above the silhouette. */
-@media (orientation: portrait) {
-  .brand { left: 0; top: -5px; transform: none; width: 150px; height: 70px; }
-  .play-header { top: max(12px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); }
-  .selected-score { top: max(88px, calc(env(safe-area-inset-top) + 76px)); left: max(20px, env(safe-area-inset-left)); width: calc(100% - 84px); }
-  .selected-heading h1 { font-size: 21px; }
-  .selected-score .practice-sequence { gap: 7px; margin-top: 3px; }
-  .score-link { width: calc(100% + 50px); max-width: 460px; }
-  .ocarina-scene { top: 25%; bottom: max(136px, calc(env(safe-area-inset-bottom) + 124px)); left: 4px; right: 4px; }
-  .hole { width: 38px; height: 38px; font-size: 12px; }
-  .hole.small { width: 28px; height: 28px; font-size: 10px; }
-  .mouth-button { width: 45px; height: 44px; }
-  .instrument-dock { flex-wrap: wrap; gap: 12px; bottom: max(18px, env(safe-area-inset-bottom)); }
-  .thumb-row { width: 100%; justify-content: center; }
-  .thumb-row .hole { width: 42px; height: 42px; }
-  .quick-notes { gap: 10px; }
-  .note-key { width: 52px; height: 50px; }
-  .decor-ocarina { top: 25%; bottom: 90px; left: 4px; width: calc(100% - 8px); height: calc(75% - 90px); }
-  .simple-scene .note-key { width: 53px; height: 53px; }
-  .simple-scene .quick-notes { gap: 10px; bottom: max(24px, env(safe-area-inset-bottom)); }
-  .menu-dialog { max-height: calc(100dvh - 24px); width: calc(100% - 24px); }
-  .modal-header { padding: 16px 18px 8px; }
-  .menu-tabs { padding: 0 18px; }
-  .menu-panel { padding: 13px 18px 20px; }
-  .song-en { display: none; }
-  .song-open { gap: 10px; }
-  .song-emblem { flex-basis: 33px; height: 33px; font-size: 22px; }
-  .song-name { font-size: 14px; }
-  .song-card { gap: 8px; }
-  .small-dialog .modal-header { padding-left: 0; padding-right: 0; }
-}
 
-@media (orientation: portrait) and (max-width: 360px) {
-  .selected-score { left: 15px; width: calc(100% - 72px); }
-  .selected-heading h1 { font-size: 19px; }
-  .selected-score .practice-sequence { gap: 5px; }
-  .note-key { width: 47px; height: 46px; }
-  .quick-notes { gap: 7px; }
-  .small-dialog { padding-left: 16px; padding-right: 16px; }
-  .small-dialog .practice-sequence { gap: 4px; }
-  .small-dialog .practice-step .mini-note { width: 25px; height: 25px; }
-}
+  body[data-layout='portrait'] .brand { left: 0; top: -5px; transform: none; width: 150px; height: 70px; }
+  body[data-layout='portrait'] .play-header { top: max(12px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); }
+  body[data-layout='portrait'] .selected-score { top: max(88px, calc(env(safe-area-inset-top) + 76px)); left: max(20px, env(safe-area-inset-left)); width: calc(100% - 84px); }
+  body[data-layout='portrait'] .selected-heading h1 { font-size: 21px; }
+  body[data-layout='portrait'] .selected-score .practice-sequence { gap: 7px; margin-top: 3px; }
+  body[data-layout='portrait'] .score-link { width: calc(100% + 50px); max-width: 460px; }
+  body[data-layout='portrait'] .ocarina-scene { top: 25%; bottom: max(136px, calc(env(safe-area-inset-bottom) + 124px)); left: 4px; right: 4px; }
+  body[data-layout='portrait'] .hole { width: 38px; height: 38px; font-size: 12px; }
+  body[data-layout='portrait'] .hole.small { width: 28px; height: 28px; font-size: 10px; }
+  body[data-layout='portrait'] .mouth-button { width: 45px; height: 44px; }
+  body[data-layout='portrait'] .instrument-dock { flex-wrap: wrap; gap: 12px; bottom: max(18px, env(safe-area-inset-bottom)); }
+  body[data-layout='portrait'] .thumb-row { width: 100%; justify-content: center; }
+  body[data-layout='portrait'] .thumb-row .hole { width: 42px; height: 42px; }
+  body[data-layout='portrait'] .quick-notes { gap: 10px; }
+  body[data-layout='portrait'] .note-key { width: 52px; height: 50px; }
+  body[data-layout='portrait'] .decor-ocarina { top: 25%; bottom: 90px; left: 4px; width: calc(100% - 8px); height: calc(75% - 90px); }
+  body[data-layout='portrait'] .simple-scene .note-key { width: 53px; height: 53px; }
+  body[data-layout='portrait'] .simple-scene .quick-notes { gap: 10px; bottom: max(24px, env(safe-area-inset-bottom)); }
+  body[data-layout='portrait'] .menu-dialog { max-height: calc(100dvh - 24px); width: calc(100% - 24px); }
+  body[data-layout='portrait'] .modal-header { padding: 16px 18px 8px; }
+  body[data-layout='portrait'] .menu-tabs { padding: 0 18px; }
+  body[data-layout='portrait'] .menu-panel { padding: 13px 18px 20px; }
+  body[data-layout='portrait'] .song-en { display: none; }
+  body[data-layout='portrait'] .song-open { gap: 10px; }
+  body[data-layout='portrait'] .song-emblem { flex-basis: 33px; height: 33px; font-size: 22px; }
+  body[data-layout='portrait'] .song-name { font-size: 14px; }
+  body[data-layout='portrait'] .song-card { gap: 8px; }
+  body[data-layout='portrait'] .small-dialog .modal-header { padding-left: 0; padding-right: 0; }
+
+
+  body[data-layout='portrait'][data-compact='true'] .selected-score { left: 15px; width: calc(100% - 72px); }
+  body[data-layout='portrait'][data-compact='true'] .selected-heading h1 { font-size: 19px; }
+  body[data-layout='portrait'][data-compact='true'] .selected-score .practice-sequence { gap: 5px; }
+  body[data-layout='portrait'][data-compact='true'] .note-key { width: 47px; height: 46px; }
+  body[data-layout='portrait'][data-compact='true'] .quick-notes { gap: 7px; }
+  body[data-layout='portrait'][data-compact='true'] .small-dialog { padding-left: 16px; padding-right: 16px; }
+  body[data-layout='portrait'][data-compact='true'] .small-dialog .practice-sequence { gap: 4px; }
+  body[data-layout='portrait'][data-compact='true'] .small-dialog .practice-step .mini-note { width: 25px; height: 25px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+/* Dialogs enter the top layer, so they rotate independently of the stage. */
+dialog { position: fixed; inset: auto; left: 50%; top: 50%; margin: 0; transform: translate(-50%, -50%) rotate(var(--play-angle, 0deg)); max-width: calc(var(--play-width) - 24px); max-height: calc(var(--play-height) - 24px); }
+body[data-layout='landscape'] dialog { max-height: calc(var(--play-height) - 16px); }
+.menu-dialog { width: min(700px, calc(var(--play-width) - 24px)); }
+.small-dialog { width: min(440px, calc(var(--play-width) - 24px)); }
+.score-dialog { width: min(1200px, calc(var(--play-width) - 24px)); }
+.controller-hole { width: clamp(48px, 7cqw, 72px); height: clamp(48px, 7cqw, 72px); font: 500 20px -apple-system, sans-serif; }
+.controller-hole.sounding { background: #d8c791; color: #1d3327; box-shadow: 0 0 24px #dbc48050; }
+.shift-rail { position: absolute; left: 9%; top: 68%; width: 31%; display: flex; transform: translateY(-50%); border: 1px solid #a3b8aa80; border-radius: 24px; background: #0c2636b0; padding: 3px; pointer-events: auto; touch-action: none; }
+.shift-rail button { flex: 1; min-width: 0; height: 42px; padding: 0; border-radius: 50%; background: transparent; color: #d7e1cf; font-size: 12px; touch-action: none; }
+.shift-rail button.active { background: #d8c791; color: #203b2c; }
+.touch-dock { left: 9%; right: 8%; justify-content: space-between; bottom: 15px; }
+#live-pitch { font: 15px var(--serif); color: var(--gold); min-width: 100px; text-align: center; }
+.touch-dock .stop-key { width: 44px; height: 44px; }
+body[data-layout='landscape'] .controller-hole { width: clamp(48px, 7cqw, 64px); height: clamp(48px, 7cqw, 64px); font-size: 18px; }
+body[data-layout='landscape'][data-compact='true'] .shift-rail { left: 8%; width: 33%; }
+.guide-panel h3 { font: 500 19px var(--serif); margin: 0 0 8px; }
+.guide-intro, .guide-legend { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.guide-legend { color: var(--gold); }
+.scale-scroll { overflow-x: auto; }
+.scale-table { width: 100%; border-collapse: collapse; font-size: 11px; white-space: nowrap; }
+.scale-table th, .scale-table td { padding: 8px 7px; text-align: left; border-bottom: 1px solid var(--line); }
+.scale-table th { font-weight: 500; color: var(--cream); }
+.scale-table td { color: var(--muted); }
+.scale-table td b { color: var(--gold); }
+.scale-table .icon-button { width: 36px; height: 36px; font-size: 13px; }
+.fingering-diagram { display: block; width: 115px; height: 68px; }
+.extra-scale { margin-top: 20px; }
+.extra-scale summary { color: var(--gold); cursor: pointer; font-size: 12px; padding: 10px 0; }
+body[data-rotated='true'] .toast { max-width: calc(var(--play-width) - 30px); left: 50%; top: 50%; bottom: auto; transform: translate(-50%, -50%) rotate(var(--play-angle)); }
+
+.menu-dialog .modal-header { position: sticky; top: 0; height: 64px; padding: 8px 24px; z-index: 4; background: #172a21; }
+.menu-dialog .menu-tabs { position: sticky; top: 64px; z-index: 3; background: #172a21; }
