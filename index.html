@@ -56,7 +56,7 @@
       <p id="input-hint" class="input-hint"></p><p id="touch-capability" class="touch-capability"></p>
       <label class="setting-row">음량 <output id="volume-value">70%</output><input id="volume" type="range" min="0" max="100" value="70"></label>
       <label class="setting-row">재생 속도 <output id="tempo-value">100%</output><input id="tempo" type="range" min="50" max="160" step="5" value="100"></label>
-      <label class="setting-row">직접 연주 음높이<select id="octave"><option value="0">기본 · B4–F6</option><option value="-12">한 옥타브 낮게</option><option value="12">한 옥타브 높게</option></select></label>
+      <label class="setting-row">연주·재생 음높이<select id="octave"><option value="0">기본 · B4–F6</option><option value="-12">한 옥타브 낮게</option><option value="12">한 옥타브 높게</option></select></label>
       <label class="checkbox-row"><input id="haptics" type="checkbox" checked> 터치 진동</label>
     </section>
     <section class="menu-panel guide-panel" data-panel="fingering" aria-label="음계와 운지" hidden>
@@ -68,9 +68,9 @@
     </section>
     <section class="menu-panel source-copy" data-panel="sources" aria-label="자료 안내" hidden>
       <p>비공식 팬 프로젝트. 직접 연주음은 공개 녹음을 분석해 조정한 합성음입니다. 원본과 완전히 같은 음색은 아닙니다.</p>
-      <p>곡 재생은 100% 속도에서 Nintendo 공식 녹음의 음색·박자를 그대로 사용합니다. 로고·전체 악보·음원은 공식 서버에서 불러옵니다.</p>
+      <p>곡 재생은 버튼과 같은 소리를 사용하며, 길게 끄는 음과 끝 여운을 줄였습니다. 로고·전체 악보는 공식 서버에서 불러옵니다.</p>
       <a href="https://www.nintendo.com/kr/games/switch2/aa9ja/index.html" target="_blank" rel="noopener noreferrer">Nintendo 공식 로고 출처 ↗</a>
-      <a href="https://www.nintendo.com/jp/games/switch2/aa9ja/melody/index.html" target="_blank" rel="noopener noreferrer">Nintendo 공식 악보·음원 ↗</a>
+      <a href="https://www.nintendo.com/jp/games/switch2/aa9ja/melody/index.html" target="_blank" rel="noopener noreferrer">Nintendo 공식 악보 ↗</a>
       <a href="https://hori.jp/manual/nsx-261/" target="_blank" rel="noopener noreferrer">HORI 공식 운지표 ↗</a>
     </section>
   </dialog>
@@ -87,7 +87,6 @@
     <div class="expanded-score"><img id="expanded-score-image" width="1912" height="874" alt="" referrerpolicy="no-referrer"></div>
   </dialog>
   <div id="toast" role="status" class="toast"></div>
-  <audio id="official-audio" preload="none"></audio>
-  <script type="module" src="./app.js?v=20261113-ceramic"></script>
+  <script type="module" src="./app.js?v=20261114-button-audio"></script>
 </body>
 </html>
