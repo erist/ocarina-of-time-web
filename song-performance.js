@@ -21,7 +21,9 @@ const referenceBeat = 60 / 100;
 const shortNoteSeconds = .35;
 
 /**
- * Same MIDI pitches as the manual buttons, with short holds and explicit rests.
+ * Same MIDI pitches as the manual buttons, with a short final note.
+ * Lullaby sustains its intermediate notes to preserve the connected phrase;
+ * capping them at 350 ms left up to 949 ms of silence between attacks.
  * At 100% speed the audio engine releases each note 45 ms before its slot ends.
  * noteIndex maps the expanded sequence back to the score; rests clear emphasis.
  */
@@ -31,7 +33,7 @@ export function songPlaybackSequence(song, octave = 0) {
     const last = noteIndex === song.notes.length - 1;
     const spacing = last ? shortNoteSeconds
       : starts ? starts[noteIndex + 1] - starts[noteIndex] : referenceBeat;
-    const duration = Math.min(shortNoteSeconds, spacing);
+    const duration = song.id === 'zelda' && !last ? spacing : Math.min(shortNoteSeconds, spacing);
     const note = { midi: NOTES[id].midi + octave, beats: duration / referenceBeat, noteIndex };
     return spacing > duration
       ? [note, { midi: null, beats: (spacing - duration) / referenceBeat, noteIndex: -1 }]
