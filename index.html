@@ -8,7 +8,7 @@
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="./manifest.webmanifest">
   <title>시간의 오카리나 · Hyrule Melody</title>
-  <link rel="stylesheet" href="./style.css?v=20261113-landscape-2">
+  <link rel="stylesheet" href="./style.css?v=20261113-fullscreen-touch">
 </head>
 <body class="play-app">
   <header class="play-header">
@@ -48,6 +48,8 @@
     </section>
     <section class="menu-panel" data-panel="settings" aria-label="연주 설정" hidden>
       <div class="instrument-modes" aria-label="연주 방식"><button data-mode="merch" aria-pressed="true">공식 굿즈 배열</button><button data-mode="simple" aria-pressed="false">간편 5음</button></div>
+      <div class="instrument-modes input-modes" aria-label="운지 입력"><button data-input-mode="direct" aria-pressed="false">직접 운지</button><button data-input-mode="tap" aria-pressed="true">탭 운지</button></div>
+      <p id="input-hint" class="input-hint"></p><p id="touch-capability" class="touch-capability"></p>
       <label class="setting-row">음량 <output id="volume-value">70%</output><input id="volume" type="range" min="0" max="100" value="70"></label>
       <label class="setting-row">연주 속도 <output id="tempo-value">100 BPM</output><input id="tempo" type="range" min="50" max="160" step="5" value="100"></label>
       <label class="setting-row">음높이<select id="octave"><option value="0">기본 · D5–D6</option><option value="-12">한 옥타브 낮게</option><option value="12">한 옥타브 높게</option></select></label>
@@ -74,6 +76,6 @@
   </dialog>
   <div id="toast" role="status" class="toast"></div>
   <audio id="official-audio" preload="none"></audio>
-  <script type="module" src="./app.js?v=20261113-landscape-2"></script>
+  <script type="module" src="./app.js?v=20261113-fullscreen-touch"></script>
 </body>
 </html>

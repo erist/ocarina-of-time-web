@@ -2,6 +2,7 @@ import { OcarinaAudio } from './audio.js';
 import { SONGS, NOTES, PLAYBACK_NOTE } from './songs.js';
 import { HOLES, getFingering, getMidiForHoles } from './fingering.js';
 import { bodySvg } from './instrument-art.js';
+import { TouchFingering } from './touch-fingering.js';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -9,6 +10,11 @@ const audio = new OcarinaAudio();
 const media = $('#official-audio');
 const noteEntries = Object.entries(NOTES);
 const holds = new Map();
+const fingers = new TouchFingering();
+const tapContacts = new Map();
+const maxTouches = Number(navigator.maxTouchPoints) || 0;
+let inputMode = maxTouches >= 9 ? 'direct' : 'tap';
+let fingerVoice = null, fingerMidi = null, fingerTimer, fingerGeneration = 0, fingerReady = null;
 const symbols = ['♧', '◷', '☼', 'ϟ', '♞', '❧', '❧', '♨', '♧', '◇', '☾', '✦'];
 let mode = 'merch', filter = 'all', selected = null, playing = null, officialPlaying = false;
 let closed = new Set(getFingering(74).closed), progress = 0;
@@ -21,6 +27,7 @@ try {
   bpm = Number.isFinite(saved.bpm) && saved.bpm >= 50 && saved.bpm <= 160 ? saved.bpm : bpm;
   octave = [-12, 0, 12].includes(saved.octave) ? saved.octave : 0;
   haptics = saved.haptics !== false;
+  if (['direct', 'tap'].includes(saved.inputMode)) inputMode = saved.inputMode;
   mode = saved.mode === 'simple' ? 'simple' : 'merch';
   const notes = JSON.parse(localStorage.getItem('hyrule-scarecrow') || '[]');
   if (Array.isArray(notes)) custom = notes.filter(n => Object.hasOwn(NOTES, n)).slice(0, 8);
@@ -29,7 +36,7 @@ try {
 audio.setVolume(volume);
 
 function saveSettings() {
-  try { localStorage.setItem('hyrule-settings', JSON.stringify({ volume, bpm, octave, haptics, mode })); } catch {}
+  try { localStorage.setItem('hyrule-settings', JSON.stringify({ volume, bpm, octave, haptics, mode, inputMode })); } catch {}
 }
 function toast(message) {
   $('#toast').textContent = message;
@@ -50,8 +57,15 @@ function holeHtml(h) {
 function renderInstrument() {
   $('#main-instrument').innerHTML = mode === 'simple'
     ? `<div class="simple-scene">${bodySvg('simple', true)}${keysHtml()}</div>`
-    : `<div class="ocarina-scene">${bodySvg('merch')}${HOLES.filter(h => !h.back).map(holeHtml).join('')}<button class="mouth-button" data-blow aria-label="선택한 운지로 연주, 누르고 유지">♪</button></div><div class="instrument-dock"><div class="thumb-row"><span>뒷면</span>${HOLES.filter(h => h.back).map(holeHtml).join('')}</div>${keysHtml()}</div>`;
+    : `<div class="ocarina-scene">${bodySvg('merch')}${HOLES.filter(h => !h.back).map(holeHtml).join('')}</div><div class="instrument-dock"><div class="thumb-row"><span>뒷면</span>${HOLES.filter(h => h.back).map(holeHtml).join('')}</div>${keysHtml()}</div>`;
+  document.body.dataset.input = inputMode;
   syncHoles();
+  $$('[data-input-mode]').forEach(button => {
+    button.classList.toggle('active', button.dataset.inputMode === inputMode);
+    button.setAttribute('aria-pressed', String(button.dataset.inputMode === inputMode));
+  });
+  $('#touch-capability').textContent = maxTouches ? `이 기기 ${maxTouches}점 · 공식 기본 5음 운지에는 최대 9점 필요` : '터치 미지원 기기 · 마우스는 탭 운지 사용';
+  $('#input-hint').textContent = inputMode === 'direct' ? '손가락을 댄 구멍만 닫힘 · 떼면 열림' : '터치로 열고 닫기 · 누르는 동안 소리';
   $$('[data-mode]').forEach(button => {
     button.classList.toggle('active', button.dataset.mode === mode);
     button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
@@ -62,6 +76,7 @@ function syncHoles() {
     const isClosed = closed.has(Number(button.dataset.hole));
     button.classList.toggle('closed', isClosed);
     button.setAttribute('aria-pressed', String(isClosed));
+    button.classList.toggle('held', fingers.snapshot.closed.includes(Number(button.dataset.hole)) || [...tapContacts.values()].includes(Number(button.dataset.hole)));
   });
 }
 function setFingering(midi) {
@@ -70,7 +85,7 @@ function setFingering(midi) {
 }
 function highlight(midi) {
   $$('[data-note]').forEach(button => button.classList.toggle('sounding', NOTES[button.dataset.note].midi === midi));
-  $$('[data-blow]').forEach(button => button.classList.toggle('sounding', midi !== null));
+  $('.instrument-stage').classList.toggle('sounding', midi !== null);
 }
 function renderSongs() {
   const query = $('#song-search').value.trim().toLowerCase();
@@ -98,6 +113,7 @@ function updatePlaybackButtons() {
 function stop() {
   playGeneration++;
   clearTimeout(previewTimer);
+  clearFingerInput();
   audio.stopAll();
   media.pause();
   officialPlaying = false;
@@ -136,6 +152,7 @@ async function startHold(el, key, { record = true } = {}) {
   if (midi == null) { toast('운지를 확인하세요'); return; }
   const unlocking = audio.unlock();
   if (playing || officialPlaying) stop();
+  clearFingerInput();
   const token = { el, midi, voice: null, ready: false, record };
   holds.set(key, token);
   setFingering(midi);
@@ -154,7 +171,10 @@ function endHold(key) {
   if (!token) return;
   holds.delete(key);
   audio.noteOff(token.voice);
-  if (audio.activeVoice === null) highlight(null);
+  if (audio.activeVoice === null) {
+    highlight(null);
+    if (inputMode === 'direct' && !fingers.pointers.size) { closed.clear(); syncHoles(); }
+  }
 }
 function tapNote(el, key, duration = 220) {
   if (key === 'preview') clearTimeout(previewTimer);
@@ -163,20 +183,72 @@ function tapNote(el, key, duration = 220) {
   const timer = setTimeout(() => { if (holds.get(key) === token) endHold(key); }, duration);
   if (key === 'preview') previewTimer = timer;
 }
-function changeHole(id) {
-  closed.has(id) ? closed.delete(id) : closed.add(id);
+function stopFingerVoice() {
+  if (fingerVoice !== null) audio.noteOff(fingerVoice);
+  fingerVoice = null;
+  fingerMidi = null;
+  highlight(null);
+}
+function clearFingerInput() {
+  fingerGeneration++;
+  clearTimeout(fingerTimer);
+  stopFingerVoice();
+  fingers.clear();
+  tapContacts.clear();
+  if (inputMode === 'direct') closed.clear();
   syncHoles();
-  const midi = getMidiForHoles(closed);
-  const mouth = [...holds.values()].find(token => token.el.hasAttribute('data-blow'));
-  if (mouth) {
-    audio.noteOff(mouth.voice);
-    mouth.midi = midi;
-    if (midi !== null && mouth.ready) {
-      mouth.voice = audio.noteOn(midi + octave);
-      highlight(midi);
-      if (mouth.record) recordNote(midi);
-    } else highlight(null);
-  } else if (midi !== null) tapNote({ hasAttribute: () => true }, 'preview');
+}
+function refreshFingerSound() {
+  const generation = ++fingerGeneration;
+  clearTimeout(fingerTimer);
+  const snapshot = fingers.snapshot;
+  if (inputMode === 'direct') closed = new Set(snapshot.closed);
+  syncHoles();
+  const contacts = inputMode === 'direct' ? snapshot.contactCount : tapContacts.size;
+  const midi = inputMode === 'direct' ? snapshot.midi : getMidiForHoles(closed);
+  if (!contacts || midi === null) { stopFingerVoice(); return; }
+  if (fingerMidi === midi && audio.activeVoice === fingerVoice) return;
+  stopFingerVoice();
+  const sound = async () => {
+    const ready = await fingerReady;
+    if (!ready || generation !== fingerGeneration) return;
+    fingerVoice = audio.noteOn(midi + octave);
+    fingerMidi = midi;
+    highlight(midi);
+    recordNote(midi);
+  };
+  // Let a held chord settle; a latched tap can sound immediately.
+  if (inputMode === 'direct') fingerTimer = setTimeout(sound, 35);
+  else sound();
+}
+function beginFinger(pointerId, hole) {
+  if (playing || officialPlaying || holds.size) stop();
+  fingerReady = audio.unlock().catch(error => { toast(error.message); return null; });
+  if (inputMode === 'direct') fingers.press(pointerId, hole);
+  else {
+    // A second finger on the same hole must not toggle it back open.
+    if (![...tapContacts.values()].includes(hole)) closed.has(hole) ? closed.delete(hole) : closed.add(hole);
+    tapContacts.set(pointerId, hole);
+  }
+  refreshFingerSound();
+}
+function releaseFinger(pointerId) {
+  if (!fingers.pointers.has(pointerId) && !tapContacts.has(pointerId)) return;
+  fingers.release(pointerId);
+  tapContacts.delete(pointerId);
+  refreshFingerSound();
+}
+function accessibleHole(hole) {
+  if (inputMode === 'direct') {
+    // Keyboard/screen-reader activation can audition one held contact.
+    const pointerId = Symbol('accessible-hole');
+    beginFinger(pointerId, hole);
+    setTimeout(() => releaseFinger(pointerId), 230);
+  } else {
+    closed.has(hole) ? closed.delete(hole) : closed.add(hole);
+    syncHoles();
+    tapNote({ hasAttribute: () => true }, 'preview');
+  }
 }
 async function playSong(song) {
   if (!song) return;
@@ -200,7 +272,13 @@ async function playSong(song) {
         document.querySelector(`[data-song="${song.id}"]`)?.querySelectorAll('.mini-note')[index]?.classList.add('current');
         if (selected?.id === song.id) $('#practice-sequence').children[index]?.querySelector('.mini-note').classList.add('current');
       },
-      onEnd() { if (generation === playGeneration) { playing = null; updatePlaybackButtons(); updatePracticeProgress(); } },
+      onEnd() {
+        if (generation !== playGeneration) return;
+        playing = null;
+        if (inputMode === 'direct') { closed.clear(); syncHoles(); }
+        updatePlaybackButtons();
+        updatePracticeProgress();
+      },
     });
   } catch (error) { if (generation === playGeneration) { stop(); toast(error.message); } }
 }
@@ -238,7 +316,7 @@ function selectSong(id, persist = true) {
     };
     $('#score-viewer').append(img);
   }
-  if (selected) setFingering(NOTES[selected.notes[0]].midi);
+  if (selected && inputMode !== 'direct') setFingering(NOTES[selected.notes[0]].midi);
   updatePracticeProgress();
   renderSongs();
   if (persist) try { localStorage.setItem('hyrule-selected-song', selectedId); } catch {}
@@ -265,20 +343,43 @@ function renderCustom() {
   $('#custom-select').disabled = custom.length !== 8;
 }
 
-// Pointer capture stops sustained notes reliably when fingers leave a button.
+// Every finger has independent ownership; all cancel paths release sound.
 document.addEventListener('pointerdown', event => {
-  const el = event.target.closest('[data-note], [data-blow]');
+  const el = event.target.closest('[data-hole], [data-note]');
   if (!el || event.button !== 0) return;
   event.preventDefault();
   el.setPointerCapture?.(event.pointerId);
-  startHold(el, event.pointerId);
+  if (el.dataset.hole) beginFinger(event.pointerId, Number(el.dataset.hole));
+  else startHold(el, event.pointerId);
 });
-for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) document.addEventListener(name, event => endHold(event.pointerId));
+document.addEventListener('pointermove', event => {
+  if (inputMode !== 'direct' || !fingers.pointers.has(event.pointerId)) return;
+  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('#main-instrument [data-hole]');
+  const hole = target ? Number(target.dataset.hole) : null;
+  if (fingers.pointers.get(event.pointerId).hole === hole) return;
+  fingers.move(event.pointerId, hole);
+  refreshFingerSound();
+});
+document.addEventListener('pointerup', event => { releaseFinger(event.pointerId); endHold(event.pointerId); });
+document.addEventListener('pointercancel', event => {
+  if (fingers.pointers.has(event.pointerId) || tapContacts.has(event.pointerId)) clearFingerInput();
+  endHold(event.pointerId);
+});
+document.addEventListener('lostpointercapture', event => { releaseFinger(event.pointerId); endHold(event.pointerId); });
 document.addEventListener('click', event => {
   const el = event.target.closest('button');
   if (!el) return;
   if (event.detail === 0 && (el.dataset.note || el.hasAttribute('data-blow'))) { tapNote(el, 'accessible'); return; }
-  if (el.dataset.hole) { changeHole(Number(el.dataset.hole)); return; }
+  if (el.dataset.hole) { if (event.detail === 0) accessibleHole(Number(el.dataset.hole)); return; }
+  if (el.dataset.inputMode) {
+    stop();
+    inputMode = el.dataset.inputMode;
+    if (inputMode === 'direct') closed.clear();
+    else closed = new Set(getFingering(selected ? NOTES[selected.notes[0]].midi : 74).closed);
+    renderInstrument();
+    saveSettings();
+    return;
+  }
   if (el.dataset.mode) { stop(); mode = el.dataset.mode; renderInstrument(); saveSettings(); return; }
   if (el.dataset.open) { closeMenu(); selectSong(el.dataset.open); return; }
   if (el.dataset.play) { playSong(SONGS.find(song => song.id === el.dataset.play)); return; }
@@ -390,4 +491,4 @@ renderInstrument();
 if (selectedId !== 'free' && selectedId !== 'custom' && !SONGS.some(song => song.id === selectedId)) selectedId = SONGS[0].id;
 selectSong(selectedId, false);
 
-window.ocarinaState = () => ({ mode, playing, officialPlaying, selected: selected?.id ?? null, progress, closed: [...closed], currentMidi: getMidiForHoles(closed), activeMidi: audio.lastMidi, contextState: audio.context?.state ?? 'not-started', activeVoice: audio.activeVoice, heldPointers: holds.size, custom: [...custom], volume, octave });
+window.ocarinaState = () => ({ mode, inputMode, maxTouches, directContacts: fingers.snapshot.contactCount, tapContacts: tapContacts.size, fingerMidi, playing, officialPlaying, selected: selected?.id ?? null, progress, closed: [...closed], currentMidi: getMidiForHoles(closed), activeMidi: audio.lastMidi, contextState: audio.context?.state ?? 'not-started', activeVoice: audio.activeVoice, heldPointers: holds.size, custom: [...custom], volume, octave });
