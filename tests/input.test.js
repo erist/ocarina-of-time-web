@@ -136,7 +136,6 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
     },
     mode(inputMode) { dispatch('click', { detail: 1, target: target({ inputMode }) }); },
     accessibleHole(hole) { dispatch('click', { detail: 0, target: target({ hole: String(hole) }) }); },
-    clickStop() { dispatch('click', { detail: 1, target: target({ stop: '' }) }); },
     keyStop() {
       dispatch('keydown', { key: 'b', code: 'KeyB', preventDefault() {}, target: { closest: () => null, matches: () => false } });
     },
@@ -343,14 +342,14 @@ test('releasing an older base pointer preserves the newer two-contact voice', as
   assert.equal(app.audio.activeVoice, null);
 });
 
-test('the B button and keyboard B both stop held base and modifier contacts', async () => {
+test('keyboard B stops held base and modifier contacts', async () => {
   const app = fixture({ mode: 'touch', maxTouches: 2 });
-  for (const stop of [app.clickStop, app.keyStop]) {
+  {
     app.base(1, 'A');
     app.modifier(2, 1);
     await app.flush();
     assert.equal(app.state().fingerMidi, 82);
-    stop();
+    app.keyStop();
     assert.equal(app.audio.activeVoice, null);
     assert.equal(app.state().twoTouch.contactCount, 0);
     app.release(1);
@@ -365,7 +364,7 @@ test('stopping a two-contact gesture while audio unlocks prevents delayed playba
   const app = fixture({ mode: 'touch', maxTouches: 2, unlock: new Promise(done => { resolve = done; }) });
   app.base(1, 'L');
   app.modifier(2, -3);
-  app.clickStop();
+  app.keyStop();
   resolve();
   await app.flush();
   await app.tick(100);

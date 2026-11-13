@@ -359,3 +359,37 @@ body[data-rotated='true'] .toast { max-width: calc(var(--play-width) - 30px); le
 
 .menu-dialog .modal-header { position: sticky; top: 0; height: 64px; padding: 8px 24px; z-index: 4; background: #172a21; }
 .menu-dialog .menu-tabs { position: sticky; top: 64px; z-index: 3; background: #172a21; }
+
+/* Preserve the instrument silhouette; its touch targets scale in the same frame. */
+body[data-layout='landscape'] .ocarina-scene,
+body[data-layout='landscape'][data-compact='true'] .ocarina-scene {
+  width: min(64cqw, 136.5cqh); height: auto; aspect-ratio: 3 / 2;
+  inset: auto 1cqw 4cqh auto;
+}
+body[data-layout='landscape'][data-mode='merch'] .ocarina-scene {
+  width: min(64cqw, 121.5cqh); bottom: 13cqh;
+}
+body[data-layout='landscape'] .decor-ocarina {
+  inset: auto 1cqw 14cqh auto; width: min(64cqw, 120cqh); height: auto; aspect-ratio: 3 / 2;
+}
+body[data-layout='portrait'] .ocarina-scene,
+body[data-layout='portrait'] .decor-ocarina {
+  inset: auto 2cqw 24cqh; width: 96cqw; height: auto; aspect-ratio: 3 / 2;
+}
+.ocarina-body { filter: drop-shadow(0 16px 20px #06120e60); }
+body[data-layout] .shift-rail,
+body[data-layout='landscape'][data-compact='true'] .shift-rail {
+  left: max(22px, env(safe-area-inset-left)); top: auto; bottom: 11cqh;
+  width: clamp(240px, 32cqw, 320px); transform: none; z-index: 3;
+  background: #112c2ee0; border-color: #a6b79a55; box-shadow: 0 8px 28px #0003;
+}
+body[data-layout] .touch-dock {
+  left: max(22px, env(safe-area-inset-left)); right: auto; bottom: 3cqh;
+  width: clamp(240px, 32cqw, 320px); justify-content: center;
+}
+#live-pitch:empty { visibility: hidden; }
+body[data-layout='landscape'][data-compact='true'] .controller-hole { width: 48px; height: 48px; }
+body[data-layout='portrait'] .shift-rail,
+body[data-layout='portrait'] .touch-dock { left: 6cqw; width: 88cqw; }
+body[data-layout='portrait'] .shift-rail { bottom: 13cqh; }
+body[data-layout='portrait'] .touch-dock { bottom: 8cqh; }
