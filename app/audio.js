@@ -11,6 +11,9 @@ const TONE_PROFILES = [
   { midi: 83, harmonics: [1, .0021, .0201, .0005, .0013, .0001, .0002], vibratoHz: 8.9, vibratoCents: 1.7 },
   { midi: 86, harmonics: [1, .0167, .0125, .0041, .0022, .0007, .0005], vibratoHz: 7.7, vibratoCents: 8.0 },
 ];
+const RESUME_TIMEOUT_MS = 1500;
+const STALLED_CLOCK_MS = 700;
+const RETRY_SOUND = '소리를 시작하지 못했습니다. 연주 버튼을 다시 눌러 주세요.';
 
 export class OcarinaAudio {
   constructor() {
@@ -24,6 +27,8 @@ export class OcarinaAudio {
     this._generation = 0;
     this._timers = new Set();
     this._settlePlayback = null;
+    this._opening = null;
+    this._clockMark = null;
   }
 
   _initialize() {
@@ -40,14 +45,85 @@ export class OcarinaAudio {
     )]));
   }
 
-  /** Call directly from a tap/keyboard gesture, before awaiting other work. */
-  async unlock() {
-    this._initialize();
-    if (this.context.state !== 'running') await this.context.resume();
-    if (this.context.state !== 'running') {
-      throw new Error('소리를 시작하려면 화면의 연주 버튼을 다시 눌러 주세요.');
+  // Sample only on input: no polling or added latency for a working instrument.
+  _clockStalled(context) {
+    const wall = performance.now();
+    if (!this._clockMark || context.currentTime !== this._clockMark.audio) {
+      this._clockMark = { audio: context.currentTime, wall };
+      return false;
     }
-    return this.context;
+    return wall - this._clockMark.wall >= STALLED_CLOCK_MS;
+  }
+
+  _finishOpening(attempt, error) {
+    if (this._opening !== attempt) return;
+    this._opening = null;
+    clearTimeout(attempt.timer);
+    attempt.context.removeEventListener?.('statechange', attempt.check);
+    if (error) attempt.reject(error);
+    else {
+      this._clockMark = { audio: attempt.context.currentTime, wall: performance.now() };
+      attempt.resolve(attempt.context);
+    }
+  }
+
+  _discardContext(error) {
+    const context = this.context;
+    if (this._opening) this._finishOpening(this._opening, error);
+    this.master?.disconnect();
+    this._voices.clear();
+    this.activeVoice = this.lastMidi = null;
+    this.context = this.master = this._waves = this._clockMark = null;
+    // Don't await WebKit releasing the old output before the next trusted gesture.
+    if (context && context.state !== 'closed') void context.close().catch(() => {});
+  }
+
+  reset() {
+    this._discardContext(new DOMException('오디오 연결이 해제됐습니다.', 'AbortError'));
+    this.stopAll();
+  }
+
+  /** Must be called synchronously from an input handler, before its first await. */
+  async unlock(retryInGesture = false) {
+    const old = this.context;
+    if (old && (old.state === 'closed' || old.state === 'interrupted' ||
+        (old.state === 'running' && this._clockStalled(old)))) this.reset();
+    this._initialize();
+    const context = this.context;
+    if (context.state === 'running') {
+      if (this._opening) this._finishOpening(this._opening);
+      if (!this._clockMark) this._clockStalled(context);
+      return context;
+    }
+
+    this._clockMark = null;
+    let attempt = this._opening;
+    if (attempt && !retryInGesture) return attempt.promise;
+    if (!attempt) {
+      let resolve, reject;
+      const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+      this._opening = attempt = { context, promise, resolve, reject, requests: 0 };
+      attempt.check = () => {
+        if (context.state === 'running') this._finishOpening(attempt);
+      };
+      context.addEventListener?.('statechange', attempt.check);
+      attempt.timer = setTimeout(() => {
+        if (this._opening === attempt) this._discardContext(new Error(RETRY_SOUND));
+      }, RESUME_TIMEOUT_MS);
+    }
+    const request = ++attempt.requests;
+    const failed = () => {
+      // A denied pointerdown may arrive after an eligible touchend retried.
+      if (this._opening === attempt && attempt.requests === request) {
+        this._discardContext(new Error(RETRY_SOUND));
+      }
+    };
+    try { context.resume().then(attempt.check, failed); } catch { failed(); }
+    return attempt.promise;
+  }
+
+  activate() {
+    return this.unlock(true);
   }
 
   setVolume(value) {
@@ -145,7 +221,6 @@ export class OcarinaAudio {
    */
   async play(sequence, { bpm = 100, onNote = () => {}, onEnd = () => {} } = {}) {
     this.stopAll();
-    const generation = this._generation;
     if (!Array.isArray(sequence) || sequence.length > 512) throw new TypeError('Invalid sequence');
     if (!Number.isFinite(bpm) || bpm < 20 || bpm > 300) throw new RangeError('Invalid tempo');
     const notes = sequence.map(({ midi, beats = 1 }) => {
@@ -155,7 +230,11 @@ export class OcarinaAudio {
       if (!Number.isFinite(beats) || beats <= 0 || beats > 64) throw new RangeError('Invalid duration');
       return { midi, beats };
     });
-    await this.unlock();
+    const ready = this.unlock();
+    // unlock may synchronously replace an interrupted/stalled graph.
+    const generation = this._generation;
+    try { await ready; }
+    catch (error) { if (generation !== this._generation) return false; throw error; }
     if (generation !== this._generation) return false;
     const start = this.context.currentTime + 0.035;
     const beat = 60 / bpm;

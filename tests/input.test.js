@@ -2,12 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { SONGS, NOTES, PLAYBACK_NOTE } from '../app/songs.js';
+import { SONGS, NOTES } from '../app/songs.js';
 import { HOLES, getFingering, getMidiForHoles } from '../app/fingering.js';
 import { TouchFingering } from '../app/touch-fingering.js';
 import { TwoTouchInstrument } from '../app/two-touch.js';
 import { resolvePlayLayout } from '../app/play-layout.js';
 import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from '../app/control-mapping.js';
+import { initialLanguage, uiStrings, audioErrorText } from '../app/i18n-ui.js';
+import { applyStaticLanguage } from '../app/i18n-dom.js';
+import { localizedSong, localizedPitch, localizedControllerParts } from '../app/i18n-songs.js';
 import { songPlaybackSequence } from '../app/song-performance.js';
 
 // Exercise the real application event handlers with only browser presentation
@@ -15,12 +18,14 @@ import { songPlaybackSequence } from '../app/song-performance.js';
 const source = readFileSync(new URL('../app/app.js', import.meta.url), 'utf8')
   .replace(/^import .*;\n/gm, '');
 
-function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, height = 844, octave = 0, custom = [] } = {}) {
+function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, height = 844, octave = 0, custom = [], settings = { version: 2, mode, octave }, languages = ['ko-KR'] } = {}) {
   let now = 0, nextTimer = 0, audio;
   const timers = new Map();
   const listeners = new Map();
   const nodes = new Map();
   const windowListeners = new Map();
+  const storage = new Map([['hyrule-scarecrow', JSON.stringify(custom)]]);
+  if (settings) storage.set('hyrule-settings', JSON.stringify(settings));
   const layoutStyles = new Map();
   const hitTests = [];
   let hitTarget = null;
@@ -56,9 +61,26 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
       this.lastMidi = null;
       this.notes = [];
       this.serial = 0;
+      this.activations = 0;
+      this.resets = 0;
     }
-    setVolume() {}
-    async unlock() { if (unlock) await unlock; return this.context; }
+    setVolume(value) { this.volume = value; }
+    async unlock() {
+      this.context ??= { state: 'running' };
+      if (unlock) await unlock;
+      return this.context;
+    }
+    async activate() {
+      this.activations++;
+      this.context ??= {};
+      this.context.state = 'running';
+      return this.context;
+    }
+    reset() {
+      this.stopAll();
+      if (this.context) this.resets++;
+      this.context = null;
+    }
     noteOn(midi) {
       this.lastMidi = midi;
       this.notes.push(midi);
@@ -66,6 +88,7 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
     }
     noteOff(id) { if (id === this.activeVoice) this.activeVoice = null; }
     play(sequence, options) {
+      this.context ??= { state: 'running' };
       this.playback = { sequence, options };
       return new Promise(resolve => { this.settlePlayback = resolve; });
     }
@@ -83,12 +106,13 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
     },
   };
   vm.runInNewContext(source, {
-    document, window, navigator: { maxTouchPoints: maxTouches },
+    document, window, navigator: { maxTouchPoints: maxTouches, languages },
     localStorage: {
-      getItem(key) { return key === 'hyrule-settings' ? JSON.stringify({ version: 2, mode, octave }) : key === 'hyrule-scarecrow' ? JSON.stringify(custom) : null; },
-      setItem() {}, removeItem() {},
+      getItem(key) { return storage.get(key) ?? null; },
+      setItem(key, value) { storage.set(key, value); },
+      removeItem(key) { storage.delete(key); },
     },
-    OcarinaAudio: Audio, SONGS, NOTES, PLAYBACK_NOTE,
+    OcarinaAudio: Audio, SONGS, NOTES, initialLanguage, uiStrings, audioErrorText, applyStaticLanguage, localizedSong, localizedPitch, localizedControllerParts,
     HOLES, getFingering, getMidiForHoles, TouchFingering, TwoTouchInstrument, bodySvg: () => '',
     resolvePlayLayout, GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi, songPlaybackSequence,
     requestAnimationFrame: () => 1, cancelAnimationFrame() {},
@@ -108,6 +132,7 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
   return {
     audio,
     nodes,
+    storage,
     playSong(id) { dispatch('click', { detail: 1, target: target({ play: id }) }); },
     playCustom() { nodes.get('#custom-play').onclick(); },
     state: window.ocarinaState,
@@ -138,6 +163,19 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
       dispatch('pointerdown', { button: 0, pointerId, preventDefault() {}, target: target({ shift: String(offset) }) });
     },
     release(pointerId) { dispatch('pointerup', { pointerId }); },
+    gesture(name, { pointerId = 1, isTrusted = true, instrument = true } = {}) {
+      dispatch(name, {
+        pointerId, pointerType: 'touch', isTrusted, detail: 1,
+        target: instrument ? target({ base: 'L', note: 'D' }) : { closest: () => null },
+      });
+    },
+    visibility(hidden) {
+      document.hidden = hidden;
+      dispatch('visibilitychange', {});
+    },
+    page(name, persisted) {
+      windowListeners.get(name)?.forEach(callback => callback({ persisted }));
+    },
     cancel(pointerId) { dispatch('pointercancel', { pointerId }); },
     lostCapture(pointerId) { dispatch('lostpointercapture', { pointerId }); },
     move(pointerId) { dispatch('pointermove', { pointerId, clientX: 0, clientY: 0 }); },
@@ -442,4 +480,114 @@ test('manual takeover and newer songs ignore stale playback callbacks', async ()
   assert.equal(app.state().fingerMidi, 74);
   app.release(1);
   assert.equal(app.audio.activeVoice, null);
+});
+
+test('a trusted touch release unlocks the next note without playing a lifted finger', async () => {
+  let allow;
+  const app = fixture({ mode: 'touch', unlock: new Promise(resolve => { allow = resolve; }) });
+  app.audio.context.state = 'suspended';
+  const activate = app.audio.activate.bind(app.audio);
+  app.audio.activate = () => { allow(); return activate(); };
+  app.base(1, 'L');
+  await app.flush();
+  assert.deepEqual(app.audio.notes, []);
+  app.gesture('pointerup');
+  await app.flush();
+  assert.equal(app.audio.activations, 1);
+  assert.deepEqual(app.audio.notes, []);
+  app.base(2, 'Y');
+  await app.flush();
+  assert.deepEqual(app.audio.notes, [83]);
+});
+
+test('touchend and click retry suspended instrument audio only on visible, trusted input', async () => {
+  const app = fixture({ mode: 'touch' });
+  for (const name of ['touchend', 'click']) {
+    app.audio.context.state = 'suspended';
+    const initial = app.audio.activations;
+    app.gesture(name, { isTrusted: false });
+    app.gesture(name, { instrument: false });
+    assert.equal(app.audio.activations, initial);
+    app.gesture(name);
+    app.gesture(name);
+    assert.equal(app.audio.activations, initial + 1);
+  }
+  app.visibility(true);
+  app.gesture('touchend');
+  assert.equal(app.audio.context, null);
+  assert.deepEqual(app.audio.notes, []);
+});
+
+test('background and restored pages discard stale audio and wait for fresh input', async () => {
+  let allow;
+  const app = fixture({ mode: 'touch', unlock: new Promise(resolve => { allow = resolve; }) });
+  app.base(1, 'R');
+  app.visibility(true);
+  app.page('pagehide', true);
+  allow();
+  await app.flush();
+  assert.equal(app.state().twoTouch.contactCount, 0);
+  assert.deepEqual(app.audio.notes, []);
+  app.visibility(false);
+  app.page('pageshow', true);
+  assert.equal(app.audio.context, null);
+  assert.equal(app.audio.activations, 0);
+  app.playSong('zelda');
+  app.page('pageshow', false);
+  assert.equal(app.state().playing, 'zelda');
+  app.page('pageshow', true);
+  assert.equal(app.state().playing, null);
+  assert.equal(app.audio.context, null);
+  app.base(2, 'R');
+  await app.flush();
+  assert.deepEqual(app.audio.notes, [77]);
+});
+
+test('reconnecting from settings clears held input and plays one short note at the chosen volume', async () => {
+  const app = fixture({ mode: 'touch' });
+  app.nodes.get('#volume').oninput({ target: { value: '35' } });
+  app.base(1, 'X');
+  await app.flush();
+  const oldContext = app.audio.context;
+  app.nodes.get('#audio-reconnect').onclick();
+  assert.equal(app.state().twoTouch.contactCount, 0);
+  assert.notEqual(app.audio.context, oldContext);
+  assert.equal(app.audio.resets, 1);
+  assert.equal(app.audio.volume, .35);
+  assert.equal(app.audio.playback.sequence.length, 1);
+  assert.equal(app.audio.playback.sequence[0].midi, 74);
+  assert.ok(app.audio.playback.sequence[0].beats * 60 / app.audio.playback.options.bpm < .3);
+});
+
+
+test('locale selection honors browser preferences on first use and preserves Korean for returning players', () => {
+  assert.equal(fixture({ settings: null, languages: ['fr-FR', 'ja-JP'] }).state().language, 'ja');
+  assert.equal(fixture({ settings: null, languages: ['fr-FR'] }).state().language, 'ko');
+  const existing = fixture({ settings: { mode: 'touch', version: 2, volume: .37 }, languages: ['en-GB'] });
+  assert.equal(existing.state().language, 'ko');
+  assert.equal(existing.state().volume, .37);
+});
+
+test('changing language updates selected song, search and guide, preserves preferences and starts no audio', () => {
+  const app = fixture({ mode: 'simple', octave: -12 });
+  app.nodes.get('#volume').oninput({ target: { value: '45' } });
+  app.playSong('zelda');
+  const firstPlayback = app.audio.playback;
+  app.nodes.get('#language').onchange({ target: { value: 'ja' } });
+  assert.equal(app.state().playing, null);
+  assert.equal(app.audio.playback, firstPlayback);
+  assert.equal(app.audio.activations, 0);
+  assert.equal(app.state().selected, 'zelda');
+  assert.equal(app.nodes.get('#practice-title').textContent, 'ゼルダの子守歌');
+  assert.match(app.nodes.get('#scale-guide').innerHTML, /十字キー/);
+  app.nodes.get('#song-search').value = '자장가';
+  app.nodes.get('#song-search').oninput();
+  assert.match(app.nodes.get('#song-list').innerHTML, /ゼルダの子守歌/);
+  assert.doesNotMatch(app.nodes.get('#song-list').innerHTML, /エポナ|[가-힣]/);
+  const saved = JSON.parse(app.storage.get('hyrule-settings'));
+  const reloaded = fixture({ settings: saved, languages: ['ko-KR'] });
+  assert.equal(reloaded.state().language, 'ja');
+  assert.equal(reloaded.state().volume, .45);
+  assert.equal(reloaded.state().octave, -12);
+  assert.equal(reloaded.state().mode, 'simple');
 });

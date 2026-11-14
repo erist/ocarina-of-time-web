@@ -45,11 +45,12 @@ class AudioContextStub {
     this.oscillators.push(node);
     return node;
   }
-  resume() { return new Promise(resolve => this.resumeWaiters.push(resolve)); }
+  resume() { return new Promise((resolve, reject) => this.resumeWaiters.push({ resolve, reject })); }
   finishResume() {
     this.state = 'running';
-    for (const resolve of this.resumeWaiters.splice(0)) resolve();
+    for (const waiter of this.resumeWaiters.splice(0)) waiter.resolve();
   }
+  close() { this.state = 'closed'; return Promise.resolve(); }
 }
 
 class ClockStub {
@@ -99,6 +100,116 @@ async function readyAudio() {
   await ready;
   return audio;
 }
+
+test('a release gesture retries a blocked resume and unlocks every waiter', async () => {
+  const audio = new OcarinaAudio();
+  const first = audio.unlock();
+  const context = audio.context;
+  const concurrent = audio.unlock();
+  assert.equal(context.resumeWaiters.length, 1, 'ordinary calls share the same resume request');
+
+  const activated = audio.activate();
+  assert.equal(context.resumeWaiters.length, 2, 'retry happens synchronously inside the gesture');
+  // A late denial of the initial touch must not cancel the eligible release.
+  context.resumeWaiters[0].reject(new Error('Old activation denied'));
+  await Promise.resolve();
+  context.state = 'running';
+  context.resumeWaiters[1].resolve();
+  const [firstContext, secondContext] = await Promise.all([first, concurrent, activated]);
+  assert.equal(firstContext, context);
+  assert.equal(secondContext, context);
+
+  clock.tick(2100);
+  assert.equal(audio.context, context);
+  assert.equal(context.oscillators.length, 0, 'activation alone must not play a released note');
+  assert.equal(clock.jobs.size, 0);
+});
+
+test('a hung resume releases the old context and the next attempt uses the saved volume', async () => {
+  const audio = new OcarinaAudio();
+  audio.setVolume(.37);
+  const failed = assert.rejects(audio.unlock());
+  const stale = audio.context;
+  clock.tick(2000);
+  await failed;
+  assert.equal(audio.context, null);
+  assert.equal(clock.jobs.size, 0);
+
+  const next = audio.unlock();
+  const replacement = audio.context;
+  assert.notEqual(replacement, stale);
+  replacement.finishResume();
+  assert.equal(await next, replacement);
+  assert.equal(audio.master.gain.value, .37 * .42);
+  const voice = audio.noteOn(74);
+
+  stale.finishResume();
+  await Promise.resolve();
+  assert.equal(audio.context, replacement);
+  assert.equal(audio.activeVoice, voice);
+  assert.equal(stale.oscillators.length, 0);
+});
+
+test('a running context with a frozen render clock is replaced on the next input', async (t) => {
+  let now = 100;
+  t.mock.method(performance, 'now', () => now);
+  const audio = await readyAudio();
+  const originalContext = audio.context;
+  now += 1100;
+  originalContext.currentTime += 1.1;
+  assert.equal(await audio.unlock(), originalContext, 'healthy audio uses the existing context');
+
+  now += 1100;
+  const recovery = audio.unlock();
+  const replacement = audio.context;
+  assert.notEqual(replacement, originalContext, 'a stalled clock requires a fresh output graph');
+  replacement.finishResume();
+  assert.equal(await recovery, replacement);
+  assert.equal(clock.jobs.size, 0);
+});
+
+test('a foreground interruption is recovered by the same song play gesture', async () => {
+  const audio = await readyAudio();
+  const interrupted = audio.context;
+  interrupted.state = 'interrupted';
+  const playing = audio.play([{ midi: 74, beats: 1 }]);
+  const replacement = audio.context;
+  assert.notEqual(replacement, interrupted);
+  assert.equal(replacement.resumeWaiters.length, 1);
+  replacement.finishResume();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(replacement.oscillators[0]?.frequency.value, 440 * 2 ** ((74 - 69) / 12));
+  clock.tick(2000);
+  assert.equal(await playing, true, 'recreating the context must not cancel this song');
+});
+
+test('reset during resume cancels pending playback before a stale browser response arrives', async () => {
+  const audio = new OcarinaAudio();
+  const callbacks = [];
+  const playing = audio.play([{ midi: 81, beats: 1 }], {
+    onNote: (index) => callbacks.push(index), onEnd: () => callbacks.push('end'),
+  });
+  const stale = audio.context;
+  const canceledUnlock = assert.rejects(audio.unlock());
+  audio.reset();
+  assert.equal(audio.context, null);
+  assert.equal(await playing, false);
+  await canceledUnlock;
+  assert.equal(clock.jobs.size, 0);
+
+  const ready = audio.unlock();
+  const replacement = audio.context;
+  replacement.finishResume();
+  await ready;
+  const currentVoice = audio.noteOn(77);
+  stale.finishResume();
+  await Promise.resolve();
+  clock.tick(3000);
+  assert.deepEqual(callbacks, []);
+  assert.equal(stale.oscillators.length, 0);
+  assert.equal(audio.context, replacement);
+  assert.equal(audio.activeVoice, currentVoice);
+});
 
 test('stopping while mobile audio unlock is pending never starts a delayed song', async () => {
   const audio = new OcarinaAudio();

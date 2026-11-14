@@ -50,3 +50,9 @@ npm run build
 GitHub Pages는 `gh-pages` 브랜치 루트를 제공합니다. 수정 후 테스트하고 `app/`의 새 상태를 해당 브랜치로 배포합니다.
 
 근거: [자료 출처와 검증 한계](docs/sources.md).
+
+## 모바일 설정과 방문 통계
+
+설정의 언어 항목에서 한국어, English, 日本語 중 하나를 선택할 수 있습니다. 선택은 이 브라우저에 저장됩니다. 공식 도안과 악보 이미지는 원본으로 표시합니다. 소리가 나지 않으면 같은 설정에서 **소리 다시 연결**을 눌러 저장된 음량으로 짧은 시험음을 재생할 수 있습니다.
+
+[저장소의 Insights → Traffic](https://github.com/erist/ocarina-of-time-web/graphs/traffic)은 최근 14일간 GitHub 저장소의 조회수와 방문자 수를 제공합니다. 이는 배포한 웹사이트의 방문수와 다른 지표입니다. 이 사이트에는 방문 분석기를 설치하지 않았으므로 과거 사용량이나 인스타그램에서 들어온 방문수를 추산하지 않습니다. [GitHub 문서](https://docs.github.com/en/repositories/viewing-activity-and-data-for-your-repository/viewing-traffic-to-a-repository) · [Pages 방문과 저장소 조회의 차이](https://github.com/orgs/community/discussions/22090)
