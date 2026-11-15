@@ -1,7 +1,6 @@
 import { NOTES } from './songs.js?v=20261114-button-audio';
 
-// Approximate note attacks measured from the public short phrases. Preserve
-// their rhythm, but never play the recordings or carry over their long tails.
+// Seconds in Nintendo's published in-game phrases.
 const attacks = {
   zelda: [.050, .903, 1.337, 2.616, 3.458, 3.889],
   time: [.052, .592, 1.680, 2.249, 2.788, 3.876],
@@ -17,25 +16,33 @@ const attacks = {
   prelude: [.066, .318, 1.098, 1.351, 1.612, 1.863],
 };
 
+// End of each pitched note, including its release. The recording can continue
+// with silence or reverb beyond the sixth marker.
+const releases = {
+  time: [.550, 1.660, 2.200, 2.745, 3.845, 5.550],
+  epona: [.420, .745, 2.170, 2.605, 2.947, 5.500],
+};
+
 const referenceBeat = 60 / 100;
 const shortNoteSeconds = .35;
 
 /**
- * Same MIDI pitches as the manual buttons, with a short final note.
- * Lullaby sustains its intermediate notes to preserve the connected phrase;
- * capping them at 350 ms left up to 949 ms of silence between attacks.
- * At 100% speed the audio engine releases each note 45 ms before its slot ends.
- * noteIndex maps the expanded sequence back to the score; rests clear emphasis.
+ * Each step spans either a sounding note or a rest. A rest clears the current
+ * score highlight. All songs use the manual instrument's pitches.
  */
 export function songPlaybackSequence(song, octave = 0) {
   const starts = attacks[song.id];
+  const ends = releases[song.id];
   return song.notes.flatMap((id, noteIndex) => {
     const last = noteIndex === song.notes.length - 1;
-    const spacing = last ? shortNoteSeconds
-      : starts ? starts[noteIndex + 1] - starts[noteIndex] : referenceBeat;
-    const duration = song.id === 'zelda' && !last ? spacing : Math.min(shortNoteSeconds, spacing);
+    const spacing = starts && !last ? starts[noteIndex + 1] - starts[noteIndex] : referenceBeat;
+    let duration = Math.min(shortNoteSeconds, spacing);
+    if (ends) duration = ends[noteIndex] - starts[noteIndex];
+    else if (song.id === 'zelda' && !last) duration = spacing;
     const note = { midi: NOTES[id].midi + octave, beats: duration / referenceBeat, noteIndex };
-    return spacing > duration
+    // Measured phrases already have explicit rests between note releases/attacks.
+    if (ends) note.sustainToEnd = true;
+    return !last && spacing > duration
       ? [note, { midi: null, beats: (spacing - duration) / referenceBeat, noteIndex: -1 }]
       : [note];
   });

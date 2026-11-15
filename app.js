@@ -1,4 +1,4 @@
-import { OcarinaAudio } from './audio.js?v=20261114-audio-recovery';
+import { OcarinaAudio } from './audio.js?v=20261115-score';
 import { SONGS, NOTES } from './songs.js?v=20261114-button-audio';
 import { HOLES, getFingering, getMidiForHoles } from './fingering.js';
 import { bodySvg } from './instrument-art.js?v=20261113-ceramic';
@@ -7,9 +7,9 @@ import { TwoTouchInstrument } from './two-touch.js';
 import { resolvePlayLayout } from './play-layout.js';
 import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from './control-mapping.js';
 import { uiStrings, initialLanguage, audioErrorText } from './i18n-ui.js?v=20261114-i18n';
-import { applyStaticLanguage } from './i18n-dom.js?v=20261114-i18n';
+import { applyStaticLanguage } from './i18n-dom.js?v=20261115-score';
 import { localizedSong, localizedPitch, localizedControllerParts } from './i18n-songs.js?v=20261114-i18n';
-import { songPlaybackSequence } from './song-performance.js?v=20261114-lullaby';
+import { songPlaybackSequence } from './song-performance.js?v=20261115-score';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];

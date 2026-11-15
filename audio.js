@@ -14,6 +14,7 @@ const TONE_PROFILES = [
 const RESUME_TIMEOUT_MS = 1500;
 const STALLED_CLOCK_MS = 700;
 const RETRY_SOUND = '소리를 시작하지 못했습니다. 연주 버튼을 다시 눌러 주세요.';
+const NOTE_RELEASE_SECONDS = .025;
 
 export class OcarinaAudio {
   constructor() {
@@ -170,7 +171,7 @@ export class OcarinaAudio {
     if (duration !== null) {
       const releaseAt = at + Math.max(0.06, duration);
       envelope.gain.setValueAtTime(0.78, releaseAt);
-      envelope.gain.linearRampToValueAtTime(0, releaseAt + 0.025);
+      envelope.gain.linearRampToValueAtTime(0, releaseAt + NOTE_RELEASE_SECONDS);
       oscillator.stop(releaseAt + 0.03);
       vibrato.stop(releaseAt + 0.03);
     }
@@ -223,12 +224,12 @@ export class OcarinaAudio {
     this.stopAll();
     if (!Array.isArray(sequence) || sequence.length > 512) throw new TypeError('Invalid sequence');
     if (!Number.isFinite(bpm) || bpm < 20 || bpm > 300) throw new RangeError('Invalid tempo');
-    const notes = sequence.map(({ midi, beats = 1 }) => {
+    const notes = sequence.map(({ midi, beats = 1, sustainToEnd = false }) => {
       if (midi !== null && (!Number.isFinite(midi) || midi < 0 || midi > 127)) {
         throw new RangeError('Invalid MIDI note');
       }
       if (!Number.isFinite(beats) || beats <= 0 || beats > 64) throw new RangeError('Invalid duration');
-      return { midi, beats };
+      return { midi, beats, sustainToEnd };
     });
     const ready = this.unlock();
     // unlock may synchronously replace an interrupted/stalled graph.
@@ -241,9 +242,12 @@ export class OcarinaAudio {
     let elapsed = 0;
     return new Promise(resolve => {
       this._settlePlayback = resolve;
-      notes.forEach(({ midi, beats }, index) => {
+      notes.forEach(({ midi, beats, sustainToEnd }, index) => {
         const seconds = beats * beat;
-        if (midi !== null) this._createVoice(midi, start + elapsed, Math.max(0.06, seconds - 0.045));
+        if (midi !== null) {
+          const gap = sustainToEnd ? 0 : .020;
+          this._createVoice(midi, start + elapsed, seconds - NOTE_RELEASE_SECONDS - gap);
+        }
         this._later(() => {
           if (generation !== this._generation) return;
           this.lastMidi = midi;
