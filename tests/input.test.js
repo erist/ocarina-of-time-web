@@ -326,7 +326,7 @@ test('two-contact events sound all 19 game pitches and releasing the base silenc
 });
 
 test('rotated input hit testing uses viewport coordinates and sliding changes only the owning role', async () => {
-  const app = fixture({ mode: 'touch', maxTouches: 2 });
+  const app = fixture({ settings: { version: 2, mode: 'touch', rotationMode: 'right' }, maxTouches: 2 });
   assert.equal(app.layoutStyles.get('--play-width'), '844px');
   assert.equal(app.layoutStyles.get('--play-height'), '390px');
   assert.equal(app.layoutStyles.get('--play-angle'), '90deg');
@@ -421,8 +421,11 @@ test('stopping a two-contact gesture while audio unlocks prevents delayed playba
   assert.deepEqual(app.audio.notes, []);
 });
 
-test('a viewport change clears held notes and avoids rotating native landscape twice', async () => {
-  const app = fixture({ mode: 'touch', maxTouches: 2 });
+test('the default follows the browser from portrait to landscape and clears held notes on rotation', async () => {
+  const app = fixture({ settings: null, maxTouches: 2 });
+  assert.equal(app.nodes.get('#rotation-mode').value, 'auto');
+  assert.equal(app.layoutStyles.get('--play-angle'), '0deg');
+  assert.equal(app.layoutStyles.get('--play-width'), '390px');
   app.base(1, 'R');
   app.modifier(2, 2);
   await app.flush();

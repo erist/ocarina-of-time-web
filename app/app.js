@@ -23,7 +23,7 @@ const maxTouches = Number(navigator.maxTouchPoints) || 0;
 let inputMode = maxTouches >= 9 ? 'direct' : 'tap';
 let fingerVoice = null, fingerMidi = null, fingerTimer, fingerGeneration = 0, fingerReady = null;
 const symbols = ['♧', '◷', '☼', 'ϟ', '♞', '❧', '❧', '♨', '♧', '◇', '☾', '✦'];
-let mode = 'touch', rotationMode = 'right', filter = 'all', selected = null, playing = null;
+let mode = 'touch', rotationMode = 'auto', filter = 'all', selected = null, playing = null;
 let closed = new Set(getFingering(74).closed), progress = 0;
 let volume = 0.7, bpm = 100, octave = 0, haptics = true, custom = [];
 let toastTimer, practiceTimer, previewTimer, playGeneration = 0;
@@ -40,7 +40,7 @@ try {
   haptics = saved.haptics !== false;
   if (['direct', 'tap'].includes(saved.inputMode)) inputMode = saved.inputMode;
   mode = saved.version === 2 && ['touch', 'merch', 'simple'].includes(saved.mode) ? saved.mode : 'touch';
-  rotationMode = ['auto', 'left', 'right'].includes(saved.rotationMode) ? saved.rotationMode : 'right';
+  if (['auto', 'left', 'right'].includes(saved.rotationMode)) rotationMode = saved.rotationMode;
   const notes = JSON.parse(localStorage.getItem('hyrule-scarecrow') || '[]');
   if (Array.isArray(notes)) custom = notes.filter(n => Object.hasOwn(NOTES, n)).slice(0, 8);
   selectedId = localStorage.getItem('hyrule-selected-song') || selectedId;

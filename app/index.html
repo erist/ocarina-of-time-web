@@ -51,7 +51,7 @@
     </section>
     <section class="menu-panel" data-panel="settings" aria-label="연주 설정" hidden data-i18n="instrumentSettings" data-i18n-attrs="aria-label">
       <label class="setting-row"><span data-i18n="language">언어</span><select id="language"><option lang="ko" value="ko">한국어</option><option lang="en" value="en">English</option><option lang="ja" value="ja">日本語</option></select></label>
-      <label class="setting-row"><span data-i18n="orientation">화면 방향</span><select id="rotation-mode"><option value="right" data-i18n="rotateRight">세로 고정 → 가로 연주 ↻</option><option value="left" data-i18n="rotateLeft">세로 고정 → 가로 연주 ↺</option><option value="auto" data-i18n="rotateAuto">브라우저 방향 그대로</option></select></label>
+      <label class="setting-row"><span data-i18n="orientation">화면 방향</span><select id="rotation-mode"><option value="auto" data-i18n="rotateAuto">브라우저 방향 그대로</option><option value="right" data-i18n="rotateRight">세로 고정 → 가로 연주 ↻</option><option value="left" data-i18n="rotateLeft">세로 고정 → 가로 연주 ↺</option></select></label>
       <label class="setting-row"><span data-i18n="fingeringMode">운지 방식</span><select id="instrument-mode"><option value="touch" data-i18n="twoFingerMode">두 손가락 · 게임 19음</option><option value="merch" data-i18n="officialMode">공식 12구멍 · 전체 25음</option><option value="simple" data-i18n="basicMode">기본 버튼 · 5음</option></select></label>
       <label class="setting-row" id="advanced-input"><span data-i18n="holeInput">구멍 입력</span><select id="input-mode"><option value="tap" data-i18n="tapInput">탭해서 닫힘 유지</option><option value="direct" data-i18n="holdInput">누르는 동안 닫힘</option></select></label>
       <p id="input-hint" class="input-hint"></p><p id="touch-capability" class="touch-capability"></p>
@@ -90,7 +90,7 @@
     <div class="expanded-score"><img id="expanded-score-image" width="1912" height="874" alt="" referrerpolicy="no-referrer"></div>
   </dialog>
   <div id="toast" role="status" class="toast"></div>
-  <script type="module" src="./app.js?v=20261115-score"></script>
+  <script type="module" src="./app.js?v=20261115-orientation"></script>
   <script type="module" async src="./visit-counter.js?v=20261115"></script>
 </body>
 </html>
