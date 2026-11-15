@@ -6,8 +6,8 @@ import { TouchFingering } from './touch-fingering.js';
 import { TwoTouchInstrument } from './two-touch.js';
 import { resolvePlayLayout } from './play-layout.js';
 import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from './control-mapping.js';
-import { uiStrings, initialLanguage, audioErrorText } from './i18n-ui.js?v=20261115-play-icons';
-import { applyStaticLanguage } from './i18n-dom.js?v=20261115-install-guide';
+import { uiStrings, initialLanguage, audioErrorText } from './i18n-ui.js?v=20261115-controls';
+import { applyStaticLanguage } from './i18n-dom.js?v=20261115-controls';
 import { localizedSong, localizedPitch, localizedControllerParts } from './i18n-songs.js?v=20261114-i18n';
 import { songPlaybackSequence } from './song-performance.js?v=20261115-score';
 
@@ -24,7 +24,6 @@ const tapContacts = new Map();
 const maxTouches = Number(navigator.maxTouchPoints) || 0;
 let inputMode = maxTouches >= 9 ? 'direct' : 'tap';
 let fingerVoice = null, fingerMidi = null, fingerTimer, fingerGeneration = 0, fingerReady = null;
-const symbols = ['♧', '◷', '☼', 'ϟ', '♞', '❧', '❧', '♨', '♧', '◇', '☾', '✦'];
 let mode = 'touch', rotationMode = 'auto', filter = 'all', selected = null, playing = null;
 let playingVersion = null;
 let closed = new Set(getFingering(74).closed), progress = 0;
@@ -65,6 +64,9 @@ function toast(message) {
   toastTimer = setTimeout(() => $('#toast').classList.remove('visible'), 2200);
 }
 function noteLabel(id) { return controlForNote(id); }
+function controlIcon(name) {
+  return `<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="./assets/ui-icons.svg#${name}"/></svg>`;
+}
 function miniNote(id) {
   return `<span class="mini-note ${id === 'd' ? 'high' : ''}" title="${NOTES[id].pitch}">${noteLabel(id)}</span>`;
 }
@@ -76,7 +78,7 @@ function holeHtml(h) {
 }
 function twoTouchHtml() {
   const positions = [[45, 52], [49, 79], [64, 73], [77, 64], [89, 74]];
-  return `<div class="ocarina-scene two-touch-scene">${bodySvg('touch')}${noteEntries.map(([id, n], i) => `<button class="hole controller-hole" data-base="${n.control}" data-note="${id}" style="left:${positions[i][0]}%;top:${positions[i][1]}%" aria-label="${n.control} ${pitchLabel(n.midi)}" title="${pitchLabel(n.midi)}">${n.control}</button>`).join('')}</div><div class="shift-rail" aria-label="${copy().shift}">${[-3,-2,-1,0,1,2,3].map(offset => `<button data-shift="${offset}" aria-label="${offset === 0 ? copy().basePitch : copy().shiftBy(offset)}" aria-pressed="false">${offset > 0 ? '+' : ''}${offset || '·'}</button>`).join('')}</div><div class="instrument-dock touch-dock"><output id="live-pitch" aria-live="off"></output></div>`;
+  return `<div class="ocarina-scene two-touch-scene">${bodySvg('touch')}${noteEntries.map(([id, n], i) => `<button class="hole controller-hole" data-base="${n.control}" data-note="${id}" style="left:${positions[i][0]}%;top:${positions[i][1]}%" aria-label="${n.control} ${pitchLabel(n.midi)}" title="${pitchLabel(n.midi)}">${n.control}</button>`).join('')}</div><div class="shift-rail" aria-label="${copy().shift}"><span class="shift-label" aria-hidden="true">${copy().shift}</span>${[-3,-2,-1,0,1,2,3].map(offset => `<button data-shift="${offset}" aria-label="${offset === 0 ? copy().basePitch : copy().shiftBy(offset)}" aria-pressed="false">${offset > 0 ? '+' : offset < 0 ? '−' : ''}${Math.abs(offset)}</button>`).join('')}</div><div class="instrument-dock touch-dock"><output id="live-pitch" aria-live="off"></output></div>`;
 }
 function renderInstrument() {
   $('#main-instrument').innerHTML = mode === 'touch' ? twoTouchHtml() : mode === 'simple'
@@ -141,15 +143,16 @@ function renderSongs() {
     const isSelected = selected?.id === song.id;
     return `<article class="song-card ${isSelected ? 'is-selected' : ''}" data-song="${song.id}" style="--song-color:${song.color}">
       <button class="song-open" data-open="${song.id}" aria-label="${copy().selectSong(info.title)}" aria-pressed="${isSelected}">
-        <span class="song-emblem" aria-hidden="true">${symbols[SONGS.indexOf(song)]}</span>
-        <span class="song-info"><span class="song-name">${info.title}</span><span class="song-effect">${info.effect}</span>
-        <span class="mini-notes" aria-label="${song.notes.map(noteLabel).join(' ')}">${song.notes.map(miniNote).join('')}</span></span>
+        <span class="song-emblem" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="./assets/ui-icons.svg#${song.id}"/></svg></span>
+        <span class="song-info"><span class="song-name">${info.title}${isSelected ? controlIcon('check') : ''}</span><span class="song-effect">${info.effect}</span></span>
       </button>
-      <div class="song-actions"><button class="song-play" data-play="${song.id}">▶</button>
+      <span class="mini-notes" aria-label="${song.notes.map(noteLabel).join(' ')}">${song.notes.map(miniNote).join('')}</span>
+      <div class="song-actions"><button class="song-play" data-play="${song.id}"></button>
         <button class="full-play" data-play="${song.id}" data-version="full"></button></div>
     </article>`;
   }).join('');
 
+  $('#song-count').textContent = copy().songCount(found.length);
   $('#empty-results').hidden = found.length > 0;
   updatePlaybackButtons();
 }
@@ -159,9 +162,10 @@ function setPlaybackButton(button, title, version, active) {
   if (full) {
     button.title = active ? copy().stopFull(title) : copy().playFull(title);
   } else {
-    button.textContent = active ? '■' : '▶';
-    button.title = active ? copy().stopSong(title) : copy().playPhrase(title);
+    button.title = active ? copy().stopPhrase(title) : copy().playPhrase(title);
   }
+  const icon = active ? 'stop' : full ? 'full' : 'play';
+  button.innerHTML = controlIcon(icon) + (full ? copy().fullLabel : copy().phraseLabel);
   button.setAttribute('aria-label', button.title);
   button.classList.toggle('is-playing', active);
 }
@@ -179,7 +183,7 @@ function updatePlaybackButtons() {
   setPlaybackButton($('#practice-play'), title, 'short', active && playingVersion === 'short');
   setPlaybackButton($('#practice-full'), title, 'full', active && playingVersion === 'full');
   $('#practice-full').hidden = !selected || selected.id === 'custom';
-  $('#custom-play').textContent = playing === 'custom' ? '■' : '▶';
+  $('#custom-play').innerHTML = controlIcon(playing === 'custom' ? 'stop' : 'play');
   const customTitle = songInfo(customSong()).title;
   $('#custom-play').title = playing === 'custom' ? copy().stopSong(customTitle) : copy().playSong(customTitle);
   $('#custom-play').setAttribute('aria-label', $('#custom-play').title);
@@ -420,9 +424,15 @@ function renderSelection() {
   renderSongs();
 }
 function setMenuPage(page) {
-  $('#menu-dialog').scrollTop = 0;
   $$('[data-menu-page]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.menuPage === page)));
-  $$('[data-panel]').forEach(panel => { panel.hidden = panel.dataset.panel !== page; });
+  for (const panel of $$('[data-panel]')) {
+    panel.hidden = panel.dataset.panel !== page;
+    if (panel.hidden) continue;
+    panel.scrollTop = 0;
+    const heading = $('#menu-title');
+    heading.dataset.i18n = panel.dataset.i18n;
+    heading.textContent = panel.getAttribute('aria-label');
+  }
 }
 function closeDialog(dialog) {
   stop();
@@ -431,10 +441,9 @@ function closeDialog(dialog) {
 function closeMenu() { if ($('#menu-dialog').open) closeDialog($('#menu-dialog')); }
 function openMenu() {
   stop();
-  setMenuPage('songs');
   $('#menu-button').setAttribute('aria-expanded', 'true');
   $('#menu-dialog').showModal();
-  $('#menu-dialog').scrollTop = 0;
+  setMenuPage('songs');
 }
 function renderCustom() {
   $('#custom-keys').innerHTML = noteEntries.map(([id, note]) => `<button data-custom="${id}" aria-label="${copy().addPitch(pitchLabel(note.midi))}">${noteLabel(id)}</button>`).join('');
@@ -600,7 +609,19 @@ $('#audio-reconnect').onclick = () => {
 };
 $('#tempo').value = bpm;
 $('#tempo-value').textContent = `${bpm}%`;
-$('#tempo').oninput = event => { bpm = Number(event.target.value); $('#tempo-value').textContent = `${bpm}%`; saveSettings(); };
+$('#tempo').oninput = event => {
+  bpm = Number(event.target.value);
+  $('#tempo-value').textContent = `${bpm}%`;
+  saveSettings();
+};
+for (const range of $$('.setting-row input[type="range"]')) {
+  const paintTrack = () => {
+    const progress = (range.valueAsNumber - Number(range.min)) / (Number(range.max) - Number(range.min));
+    range.style.setProperty('--range-fill', `${progress * 100}%`);
+  };
+  paintTrack();
+  range.addEventListener('input', paintTrack);
+}
 $('#octave').value = octave;
 $('#octave').onchange = event => { stop(); octave = Number(event.target.value); saveSettings(); };
 $('#haptics').checked = haptics;
@@ -645,8 +666,8 @@ function fingeringDiagram(item) {
   return `<svg class="fingering-diagram" viewBox="0 0 160 94" role="img" aria-label="${copy().closedHoles(item.closed.join(', '))}"><path d="M5 61Q80 4 151 39Q168 70 128 76Q55 84 5 61Z" fill="#203e47" stroke="#7b9b9e"/>${HOLES.map(h => `<circle cx="${h.x*1.5+3}" cy="${h.back ? 87 : h.y*.8}" r="${h.small ? 3 : 4}" fill="${item.closed.includes(h.id) ? '#d8c791' : '#0a1d23'}" stroke="#9eaa97" stroke-width=".6"/>`).join('')}</svg>`;
 }
 function renderGuide() {
-  $('#scale-guide').innerHTML = GAME_SCALE.map(item => `<tr><th scope="row">${pitchLabel(item.midi)}</th><td><b>${item.base}</b>${item.offset ? ` ${item.offset > 0 ? '+' : '−'}${Math.abs(item.offset)}` : ''}</td><td>${localizedControllerParts(item, language).join(' + ')}</td><td>${fingeringDiagram(item)}</td><td><button class="icon-button" data-audition="${item.midi}" aria-label="${copy().audition(pitchLabel(item.midi))}">▶</button></td></tr>`).join('');
-  $('#extra-scale-guide').innerHTML = SCALE_GUIDE.filter(item => !item.game).map(item => `<tr><th scope="row">${pitchLabel(item.midi)}</th><td>${fingeringDiagram(item)}</td><td><button class="icon-button" data-audition="${item.midi}" aria-label="${copy().audition(pitchLabel(item.midi))}">▶</button></td></tr>`).join('');
+  $('#scale-guide').innerHTML = GAME_SCALE.map(item => `<tr><th scope="row">${pitchLabel(item.midi)}</th><td><b>${item.base}</b>${item.offset ? ` ${item.offset > 0 ? '+' : '−'}${Math.abs(item.offset)}` : ''}</td><td>${localizedControllerParts(item, language).join(' + ')}</td><td>${fingeringDiagram(item)}</td><td><button class="icon-button" data-audition="${item.midi}" aria-label="${copy().audition(pitchLabel(item.midi))}">${controlIcon('play')}</button></td></tr>`).join('');
+  $('#extra-scale-guide').innerHTML = SCALE_GUIDE.filter(item => !item.game).map(item => `<tr><th scope="row">${pitchLabel(item.midi)}</th><td>${fingeringDiagram(item)}</td><td><button class="icon-button" data-audition="${item.midi}" aria-label="${copy().audition(pitchLabel(item.midi))}">${controlIcon('play')}</button></td></tr>`).join('');
 }
 async function playPreview(midi, beats) {
   const generation = playGeneration;

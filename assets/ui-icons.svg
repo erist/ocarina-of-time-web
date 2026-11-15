@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="ocarina" viewBox="0 0 24 24">
+    <path d="M2.5 15.6c1.1-3.4 6.1-6.4 11.3-7.1l3.6-5.1 3.2 1.7-2.4 4.6c2.2 1.2 3.4 3.2 3 5.3-.8 4.1-6.2 5.5-10.9 4.9-3.5-.4-8.3-2.2-7.8-4.3Z"/>
+    <g fill="currentColor" stroke="none"><circle cx="8" cy="14.3" r="1"/><circle cx="11.4" cy="12.8" r="1"/><circle cx="13.4" cy="16.3" r="1"/><circle cx="16.6" cy="14.4" r="1"/></g>
+  </symbol>
+  <symbol id="score" viewBox="0 0 24 24"><path d="M3 5c3.4-.9 6.5-.5 9 1.2C14.5 4.5 17.6 4.1 21 5v14c-3.3-1-6.4-.6-9 1-2.6-1.6-5.7-2-9-1Zm9 1.2V20"/></symbol>
+  <symbol id="settings" viewBox="0 0 24 24"><path d="M4 6h9m4 0h3M4 12h3m4 0h9M4 18h9m4 0h3"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="18" r="2"/></symbol>
+  <symbol id="fingering" viewBox="0 0 24 24"><path d="M3 18V6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Zm6-5v6m6-6v6M7 5v8h4V5m2 0v8h4V5"/></symbol>
+  <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.2"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4.5 4.5"/></symbol>
+  <symbol id="notes" viewBox="0 0 24 24"><path d="M8 17V6l11-2v11M8 10l11-2"/><ellipse cx="5.5" cy="17.5" rx="2.5" ry="2"/><ellipse cx="16.5" cy="15.5" rx="2.5" ry="2"/></symbol>
+  <symbol id="expand" viewBox="0 0 24 24"><path d="M14 4h6v6m0-6-7 7M10 20H4v-6m0 6 7-7"/></symbol>
+  <symbol id="zelda" viewBox="0 0 24 24"><path d="m3 7 5.4 4.2L12 5l3.6 6.2L21 7l-2 10H5Zm3 13h12"/></symbol>
+  <symbol id="time" viewBox="0 0 24 24"><path d="M6 3h12M6 21h12M7 3v3c0 3 2.7 4.6 5 6-2.3 1.4-5 3-5 6v3m10-18v3c0 3-2.7 4.6-5 6 2.3 1.4 5 3 5 6v3M9 7h6m-6 11 3-3 3 3"/></symbol>
+  <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9 7 7m10 10 2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+  <symbol id="storm" viewBox="0 0 24 24"><path d="M7.5 15H7a4.7 4.7 0 0 1-.9-9.3 6.1 6.1 0 0 1 11.5 1.8A3.8 3.8 0 0 1 18 15h-1.5M12 11l-3 6h4l-2 5 6-8h-4l1-3"/></symbol>
+  <symbol id="epona" viewBox="0 0 24 24"><path d="M8 20c1.4-3.4 4.1-4.6 5-7l-4 1.5-3.6-.4-1.1-3L9 6l1-3 2 2 3-2.5.2 3.3c4.7 3.1 5.8 8 5 14.2Z"/><path d="m8.5 9 .4-.3M16 9c1.8 1.7 2.4 3.7 2.4 5.3"/></symbol>
+  <symbol id="saria" viewBox="0 0 24 24"><path d="M4 20c3-5 7-9.5 13-12M6 16C2 7.5 9 4.8 20 4c-.2 10.4-4.2 16.7-13.8 12.6"/></symbol>
+  <symbol id="minuet" viewBox="0 0 24 24"><path d="m12 2 5.7 7.5h-3l5.5 7.5H3.8l5.5-7.5h-3ZM12 17v5"/></symbol>
+  <symbol id="bolero" viewBox="0 0 24 24"><path d="M13.5 2c.7 4.2-1.8 6.8.5 9.2 1.5-.7 2.5-2.2 2.6-4.2 3.1 3.9 4.4 6.8 2.6 10.4a8 8 0 0 1-14.5-1C3.4 12.1 6.5 9 8.3 6.9c-.5 2.7-.2 4.2 1.2 5C9.1 7.2 12.7 5.4 13.5 2Z"/></symbol>
+  <symbol id="serenade" viewBox="0 0 24 24"><path d="M12 2c-1.8 3.4-7.1 8.4-7.1 12.5a7.1 7.1 0 0 0 14.2 0C19.1 10.4 13.8 5.4 12 2ZM8.4 15.3c.4 1.6 1.3 2.6 3.1 2.9"/></symbol>
+  <symbol id="requiem" viewBox="0 0 24 24"><path d="m12 2 8 10-8 10-8-10Zm0 5 4 5-4 5-4-5Z"/></symbol>
+  <symbol id="nocturne" viewBox="0 0 24 24"><path d="M20 14.5A8.7 8.7 0 0 1 9.5 4a8.8 8.8 0 1 0 10.5 10.5ZM17.5 3v5M15 5.5h5"/></symbol>
+  <symbol id="prelude" viewBox="0 0 24 24"><path d="m12 2 2.3 7.7L22 12l-7.7 2.3L12 22l-2.3-7.7L2 12l7.7-2.3Z"/></symbol>
+  <symbol id="scarecrow" viewBox="0 0 24 24"><path d="M3 10h18M7 10l2-6h6l2 6M8 11a4 4 0 0 0 8 0m-4 5v6m-8-6 8 2 8-2"/></symbol>
+  <symbol id="menu" viewBox="0 0 24 24"><path d="M4 8.5h16M4 15.5h12"/></symbol>
+  <symbol id="close" viewBox="0 0 24 24"><path d="m6.5 6.5 11 11m0-11-11 11"/></symbol>
+  <symbol id="restart" viewBox="0 0 24 24"><path d="M5 9.5a7.3 7.3 0 1 1-.1 5.1M4.5 4.5v5.3h5.3"/></symbol>
+  <symbol id="external" viewBox="0 0 24 24"><path d="M13 4h7v7m0-7L9 15m0-9H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-4"/></symbol>
+  <symbol id="add" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="m5 12.5 4.3 4.2L19 7"/></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><path d="M7 5.8c0-.8.8-1.2 1.4-.8l11 6.2c.6.3.6 1.2 0 1.6L8.4 19c-.6.4-1.4 0-1.4-.8Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="full" viewBox="0 0 24 24"><path d="M7.6 17.5V6.7l8.5-2v8.5M7.6 10l8.5-2"/><ellipse cx="5.4" cy="17.7" rx="2.4" ry="1.9" fill="currentColor" stroke="none"/><ellipse cx="13.8" cy="13.5" rx="2.5" ry="1.9" fill="currentColor" stroke="none"/><path d="M17.8 14.3 22 17l-4.2 2.7Z" fill="currentColor" stroke="none"/></symbol>
+</svg>
