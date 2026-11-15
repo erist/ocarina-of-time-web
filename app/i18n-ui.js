@@ -1,5 +1,8 @@
 const strings = {
   ko: {
+    fullLabel: '풀버전', playPhrase: title => `${title} 짧은 구절 재생`,
+    playFull: title => `${title} 풀버전 재생`, stopFull: title => `${title} 풀버전 정지`,
+    pianoScore: '피아노 악보 · 유료', pianoBook: '피아노 악보집 · 오카리나 12곡', bookEntry: number => `수록곡 ${number}`,
     playKey: (pitch, key) => `${pitch} 연주, 키보드 ${key}`,
     hole: (id, back) => `${back ? '뒷면 ' : ''}${id}번 구멍`,
     shift: '반음 조절', basePitch: '기본 음높이',
@@ -22,6 +25,9 @@ const strings = {
     audioRetry: '소리를 시작하지 못했습니다. 연주 버튼을 다시 눌러 주세요.',
   },
   en: {
+    fullLabel: 'Full', playPhrase: title => `Play short phrase · ${title}`,
+    playFull: title => `Play full melody · ${title}`, stopFull: title => `Stop full melody · ${title}`,
+    pianoScore: 'Piano score · Paid', pianoBook: 'Piano book · All 12 ocarina songs', bookEntry: number => `No. ${number}`,
     playKey: (pitch, key) => `Play ${pitch}, keyboard ${key}`,
     hole: (id, back) => `${back ? 'Back hole' : 'Hole'} ${id}`,
     shift: 'Pitch adjustment', basePitch: 'Base pitch',
@@ -44,6 +50,9 @@ const strings = {
     audioRetry: 'Audio couldn’t start. Tap a note or the play button again.',
   },
   ja: {
+    fullLabel: 'フル', playPhrase: title => `${title}の短いフレーズを再生`,
+    playFull: title => `${title}をフル再生`, stopFull: title => `${title}のフル再生を停止`,
+    pianoScore: 'ピアノ楽譜 · 有料', pianoBook: 'ピアノ曲集 · オカリナ全12曲', bookEntry: number => `収録曲 ${number}`,
     playKey: (pitch, key) => `${pitch}を演奏（キーボードの${key}）`,
     hole: (id, back) => `${back ? '裏側の' : ''}${id}番の穴`,
     shift: '半音調整', basePitch: '基本の音の高さ',

@@ -11,6 +11,8 @@ import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from '../app
 import { initialLanguage, uiStrings, audioErrorText } from '../app/i18n-ui.js';
 import { applyStaticLanguage } from '../app/i18n-dom.js';
 import { localizedSong, localizedPitch, localizedControllerParts } from '../app/i18n-songs.js';
+import { ostScores, scoreBook } from '../app/ost-scores.js';
+import { fullMelodySequence } from '../app/full-melodies.js';
 import { songPlaybackSequence } from '../app/song-performance.js';
 
 // Exercise the real application event handlers with only browser presentation
@@ -114,7 +116,7 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
     },
     OcarinaAudio: Audio, SONGS, NOTES, initialLanguage, uiStrings, audioErrorText, applyStaticLanguage, localizedSong, localizedPitch, localizedControllerParts,
     HOLES, getFingering, getMidiForHoles, TouchFingering, TwoTouchInstrument, bodySvg: () => '',
-    resolvePlayLayout, GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi, songPlaybackSequence,
+    resolvePlayLayout, GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi, songPlaybackSequence, fullMelodySequence, ostScores, scoreBook,
     requestAnimationFrame: () => 1, cancelAnimationFrame() {},
     setTimeout(callback, delay) {
       const id = ++nextTimer;
@@ -133,7 +135,7 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
     audio,
     nodes,
     storage,
-    playSong(id) { dispatch('click', { detail: 1, target: target({ play: id }) }); },
+    playSong(id, version) { dispatch('click', { detail: 1, target: target({ play: id, version }) }); },
     playCustom() { nodes.get('#custom-play').onclick(); },
     state: window.ocarinaState,
     flush,
@@ -451,6 +453,42 @@ test('all song play buttons use button synthesis with canonical notes and select
     assert.equal(app.state().playing, null);
   }
   assert.equal(app.nodes.has('#official-audio'), false, 'playback must not access a recording');
+});
+
+test('every full button schedules its complete melody and respects the selected octave', () => {
+  const app = fixture({ octave: -12 });
+  for (const song of SONGS) {
+    app.playSong(song.id, 'full');
+    const sequence = app.audio.playback.sequence;
+    const pitched = sequence.filter(note => note.midi !== null);
+    assert.equal(app.state().playingVersion, 'full');
+    assert.ok(pitched.length > song.notes.length, song.id);
+    assert.ok(sequence.every(note => Number.isFinite(note.beats) && note.beats > 0), song.id);
+    assert.deepEqual(pitched.map(note => note.midi + 12),
+      fullMelodySequence(song.id).filter(note => note.midi !== null).map(note => note.midi));
+    assert.equal(pitched.at(-1).midi % 12, {
+      zelda: 7, time: 2, sun: 7, storm: 2, epona: 9, saria: 4,
+      minuet: 4, bolero: 2, serenade: 6, requiem: 2, nocturne: 5, prelude: 2,
+    }[song.id], song.id);
+    app.audio.playback.options.onEnd();
+    assert.equal(app.state().playing, null);
+  }
+});
+
+test('switching versions of the same song replaces playback and ignores the old ending', () => {
+  const app = fixture();
+  app.nodes.get('#practice-play').onclick();
+  const short = app.audio.playback.options;
+  app.nodes.get('#practice-full').onclick();
+  short.onEnd();
+  assert.equal(app.state().playingVersion, 'full');
+  const full = app.audio.playback.options;
+  app.playSong('zelda');
+  full.onEnd();
+  assert.equal(app.state().playingVersion, 'short');
+  app.playSong('zelda', 'full');
+  app.playSong('zelda', 'full');
+  assert.equal(app.state().playing, null);
 });
 
 test('custom playback uses the same short-note synthesis sequence', async () => {

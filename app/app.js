@@ -6,10 +6,13 @@ import { TouchFingering } from './touch-fingering.js';
 import { TwoTouchInstrument } from './two-touch.js';
 import { resolvePlayLayout } from './play-layout.js';
 import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from './control-mapping.js';
-import { uiStrings, initialLanguage, audioErrorText } from './i18n-ui.js?v=20261114-i18n';
-import { applyStaticLanguage } from './i18n-dom.js?v=20261115-score';
+import { uiStrings, initialLanguage, audioErrorText } from './i18n-ui.js?v=20261115-full-melodies';
+import { applyStaticLanguage } from './i18n-dom.js?v=20261115-full-melodies';
 import { localizedSong, localizedPitch, localizedControllerParts } from './i18n-songs.js?v=20261114-i18n';
 import { songPlaybackSequence } from './song-performance.js?v=20261115-score';
+
+import { fullMelodySequence } from './full-melodies.js';
+import { ostScores, scoreBook } from './ost-scores.js';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -24,6 +27,7 @@ let inputMode = maxTouches >= 9 ? 'direct' : 'tap';
 let fingerVoice = null, fingerMidi = null, fingerTimer, fingerGeneration = 0, fingerReady = null;
 const symbols = ['♧', '◷', '☼', 'ϟ', '♞', '❧', '❧', '♨', '♧', '◇', '☾', '✦'];
 let mode = 'touch', rotationMode = 'auto', filter = 'all', selected = null, playing = null;
+let playingVersion = null;
 let closed = new Set(getFingering(74).closed), progress = 0;
 let volume = 0.7, bpm = 100, octave = 0, haptics = true, custom = [];
 let toastTimer, practiceTimer, previewTimer, playGeneration = 0;
@@ -50,7 +54,7 @@ audio.setVolume(volume);
 function copy() { return uiStrings(language); }
 function songInfo(song) { return localizedSong(song, language); }
 function pitchLabel(midi) {
-  return localizedPitch(midi, language, gameNoteForMidi(midi)?.label || getFingering(midi)?.label || '');
+  return localizedPitch(midi, language, gameNoteForMidi(midi)?.label || getFingering(midi)?.label);
 }
 function saveSettings() {
   try { localStorage.setItem('hyrule-settings', JSON.stringify({ version: 2, language, volume, bpm, octave, haptics, mode, inputMode, rotationMode })); } catch {}
@@ -124,32 +128,66 @@ function highlight(midi) {
   const output = $('#live-pitch');
   if (output) output.textContent = midi === null ? '' : pitchLabel(midi);
 }
+function songTitles(song) {
+  return ['ko', 'en', 'ja'].map(lang => localizedSong(song, lang).title);
+}
+
 function renderSongs() {
   const query = $('#song-search').value.trim().normalize('NFKC').toLowerCase();
-  const found = SONGS.filter(song => {
-    if (filter !== 'all' && song.category !== filter) return false;
-    if (!query) return true;
-    const aliases = ['ko', 'en', 'ja'].map(lang => localizedSong(song, lang).title);
-    return [...aliases, song.effect, songInfo(song).effect].join(' ').normalize('NFKC').toLowerCase().includes(query);
-  });
-  $('#song-list').innerHTML = found.map(song => `<article class="song-card ${selected?.id === song.id ? 'is-selected' : ''}" data-song="${song.id}" style="--song-color:${song.color}"><button class="song-open" data-open="${song.id}" aria-label="${copy().selectSong(songInfo(song).title)}" aria-pressed="${selected?.id === song.id}"><span class="song-emblem" aria-hidden="true">${symbols[SONGS.indexOf(song)]}</span><span class="song-info"><span class="song-heading"><span class="song-name">${songInfo(song).title}</span></span><span class="song-effect">${songInfo(song).effect}</span><span class="mini-notes" aria-label="${song.notes.map(noteLabel).join(' ')}">${song.notes.map(miniNote).join('')}</span></span></button><button class="song-play" data-play="${song.id}" aria-label="${copy().playSong(songInfo(song).title)}">▶</button></article>`).join('');
-  $('#empty-results').hidden = found.length > 0;
+  const matches = values => values.join(' ').normalize('NFKC').toLowerCase().includes(query);
+  const found = SONGS.filter(song => (filter === 'all' || song.category === filter)
+    && matches([...songTitles(song), song.effect, songInfo(song).effect]));
+  $('#song-list').innerHTML = found.map(song => {
+    const info = songInfo(song);
+    const isSelected = selected?.id === song.id;
+    return `<article class="song-card ${isSelected ? 'is-selected' : ''}" data-song="${song.id}" style="--song-color:${song.color}">
+      <button class="song-open" data-open="${song.id}" aria-label="${copy().selectSong(info.title)}" aria-pressed="${isSelected}">
+        <span class="song-emblem" aria-hidden="true">${symbols[SONGS.indexOf(song)]}</span>
+        <span class="song-info"><span class="song-name">${info.title}</span><span class="song-effect">${info.effect}</span>
+        <span class="mini-notes" aria-label="${song.notes.map(noteLabel).join(' ')}">${song.notes.map(miniNote).join('')}</span></span>
+      </button>
+      <div class="song-actions"><button class="song-play" data-play="${song.id}">▶</button>
+        <button class="full-play" data-play="${song.id}" data-version="full"></button></div>
+    </article>`;
+  }).join('');
+
+  const showScores = filter === 'all' || filter === 'ost';
+  const scores = showScores ? [...ostScores, scoreBook].filter(score => {
+    const related = score === scoreBook ? SONGS : SONGS.filter(song => song.id === score.songId);
+    return matches([...Object.values(score.title), score.publisher, 'OST', ...related.flatMap(songTitles)]);
+  }) : [];
+  $('#ost-library').hidden = !scores.length;
+  $('#ost-scores').innerHTML = scores.map(score => `<a href="${score.url}" target="_blank" rel="noopener noreferrer">
+    <span><strong>${score.title[language]}</strong><small>${score.publisher} · ${score === scoreBook ? copy().pianoBook : copy().pianoScore}</small></span>
+    <span aria-hidden="true">↗</span></a>`).join('');
+  $('#empty-results').hidden = found.length + scores.length > 0;
+  $('#scarecrow-button').hidden = filter === 'ost';
   updatePlaybackButtons();
 }
+
+function setPlaybackButton(button, title, version, active) {
+  const full = version === 'full';
+  const symbol = active ? '■' : '▶';
+  button.textContent = full ? `${symbol} ${copy().fullLabel}` : symbol;
+  if (full) button.title = active ? copy().stopFull(title) : copy().playFull(title);
+  else button.title = active ? copy().stopSong(title) : copy().playPhrase(title);
+  button.setAttribute('aria-label', button.title);
+  button.classList.toggle('is-playing', active);
+}
+
 function updatePlaybackButtons() {
   $$('.song-card').forEach(card => {
     const active = card.dataset.song === playing;
     card.classList.toggle('is-playing', active);
-    const button = card.querySelector('.song-play');
-    button.textContent = active ? '■' : '▶';
     const title = songInfo(SONGS.find(song => song.id === card.dataset.song)).title;
-    button.title = active ? copy().stopSong(title) : copy().playSong(title);
-    button.setAttribute('aria-label', button.title);
+    setPlaybackButton(card.querySelector('.song-play'), title, 'short', active && playingVersion === 'short');
+    setPlaybackButton(card.querySelector('.full-play'), title, 'full', active && playingVersion === 'full');
   });
+  const title = selected ? songInfo(selected).title : '';
   const active = selected && playing === selected.id;
-  $('#practice-play').textContent = active ? '■' : '▶';
-  $('#practice-play').title = active ? copy().stopSelected : copy().playSelected;
-  $('#practice-play').setAttribute('aria-label', $('#practice-play').title);
+  setPlaybackButton($('#practice-play'), title, 'short', active && playingVersion === 'short');
+  setPlaybackButton($('#practice-full'), title, 'full', active && playingVersion === 'full');
+  $('#practice-full').hidden = !selected || selected.id === 'custom';
   $('#custom-play').textContent = playing === 'custom' ? '■' : '▶';
   const customTitle = songInfo(customSong()).title;
   $('#custom-play').title = playing === 'custom' ? copy().stopSong(customTitle) : copy().playSong(customTitle);
@@ -161,6 +199,7 @@ function stop() {
   clearFingerInput();
   audio.stopAll();
   playing = null;
+  playingVersion = null;
   holds.clear();
   highlight(null);
   $$('.mini-note.current').forEach(el => el.classList.remove('current'));
@@ -314,30 +353,34 @@ function accessibleHole(hole) {
     tapNote({ hasAttribute: () => true }, 'preview');
   }
 }
-function showPlaybackNote(song, index) {
+function showPlaybackNote(song, step) {
   $$('.mini-note.current').forEach(el => el.classList.remove('current'));
-  if (index < 0) { highlight(null); return; }
-  const midi = NOTES[song.notes[index]].midi;
-  setFingering(midi);
+  if (step?.midi == null) { highlight(null); return; }
+  const midi = step.midi - octave;
+  if (getFingering(midi)) setFingering(midi);
+  else { closed.clear(); syncHoles(); }
   highlight(midi);
+  const index = step.noteIndex;
+  if (index == null || index < 0) return;
   document.querySelector(`[data-song="${song.id}"]`)?.querySelectorAll('.mini-note')[index]?.classList.add('current');
   if (selected?.id === song.id) $('#practice-sequence').children[index]?.querySelector('.mini-note').classList.add('current');
 }
-async function playSong(song) {
+async function playSong(song, version = 'short') {
   if (!song) return;
-  if (playing === song.id) { stop(); return; }
+  if (playing === song.id && playingVersion === version) { stop(); return; }
   stop();
   const generation = playGeneration;
   playing = song.id;
+  playingVersion = version;
   clearTimeout(practiceTimer);
   updatePracticeProgress();
   updatePlaybackButtons();
   try {
-    const sequence = songPlaybackSequence(song, octave);
+    const sequence = version === 'full' ? fullMelodySequence(song.id, octave) : songPlaybackSequence(song, octave);
     const finished = await audio.play(sequence, {
       bpm,
       onNote(index) {
-        if (generation === playGeneration) showPlaybackNote(song, sequence[index]?.noteIndex ?? -1);
+        if (generation === playGeneration) showPlaybackNote(song, sequence[index]);
       },
       onEnd() { if (generation === playGeneration) stop(); },
     });
@@ -411,7 +454,7 @@ function renderCustom() {
 
 // A mobile browser can grant audio activation only when the touch ends.
 // This retries the output without replaying a finger that has already lifted.
-const audioControls = '[data-hole], [data-note], [data-shift], [data-audition], [data-play], [data-custom], #practice-play, #custom-play';
+const audioControls = '[data-hole], [data-note], [data-shift], [data-audition], [data-play], [data-custom], #practice-play, #practice-full, #custom-play';
 function activateOnGesture(event) {
   if (!event.isTrusted || document.hidden || audio.context?.state === 'running') return;
   if (!event.target?.closest?.(audioControls)) return;
@@ -487,7 +530,7 @@ document.addEventListener('click', event => {
   }
   if (el.dataset.mode) { stop(); mode = el.dataset.mode; renderInstrument(); saveSettings(); return; }
   if (el.dataset.open) { closeMenu(); selectSong(el.dataset.open); return; }
-  if (el.dataset.play) { playSong(SONGS.find(song => song.id === el.dataset.play)); return; }
+  if (el.dataset.play) { playSong(SONGS.find(song => song.id === el.dataset.play), el.dataset.version); return; }
   if (el.dataset.menuPage) { stop(); setMenuPage(el.dataset.menuPage); return; }
   if (el.dataset.filter) {
     filter = el.dataset.filter;
@@ -515,6 +558,7 @@ $('#song-search').oninput = renderSongs;
 $('#clear-selection').onclick = () => selectSong('free');
 $('#free-play').onclick = () => { closeMenu(); selectSong('free'); };
 $('#practice-play').onclick = () => playSong(selected);
+$('#practice-full').onclick = () => playSong(selected, 'full');
 $('#practice-reset').onclick = () => { stop(); resetProgress(); };
 $('#score-link').onclick = () => {
   if (!selected?.officialScore) return;
@@ -523,6 +567,11 @@ $('#score-link').onclick = () => {
   $('#expanded-score-image').src = selected.officialScore;
   $('#expanded-score-image').alt = copy().scoreAlt(songInfo(selected).title);
   $('#original-score-link').href = selected.officialScore;
+  const score = ostScores.find(entry => entry.songId === selected.id) || scoreBook;
+  const published = $('#published-score');
+  published.href = score.url;
+  const label = score === scoreBook ? copy().bookEntry(scoreBook.contents[selected.id]) : score.title[language];
+  published.textContent = `${score.publisher} · ${label} · ${copy().pianoScore} ↗`;
   $('#score-dialog').showModal();
 };
 $('#volume').value = volume * 100;
@@ -635,4 +684,4 @@ renderLanguage();
 if (selectedId !== 'free' && selectedId !== 'custom' && !SONGS.some(song => song.id === selectedId)) selectedId = SONGS[0].id;
 selectSong(selectedId, false);
 
-window.ocarinaState = () => ({ language, mode, inputMode, rotationMode, twoTouch: twoTouch.snapshot, maxTouches, directContacts: fingers.snapshot.contactCount, tapContacts: tapContacts.size, fingerMidi, playing, selected: selected?.id ?? null, progress, closed: [...closed], currentMidi: getMidiForHoles(closed), activeMidi: audio.lastMidi, contextState: audio.context?.state ?? 'not-started', activeVoice: audio.activeVoice, heldPointers: holds.size, custom: [...custom], volume, octave });
+window.ocarinaState = () => ({ language, mode, inputMode, rotationMode, twoTouch: twoTouch.snapshot, maxTouches, directContacts: fingers.snapshot.contactCount, tapContacts: tapContacts.size, fingerMidi, playing, playingVersion, selected: selected?.id ?? null, progress, closed: [...closed], currentMidi: getMidiForHoles(closed), activeMidi: audio.lastMidi, contextState: audio.context?.state ?? 'not-started', activeVoice: audio.activeVoice, heldPointers: holds.size, custom: [...custom], volume, octave });
