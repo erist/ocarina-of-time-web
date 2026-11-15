@@ -6,13 +6,12 @@ import { TouchFingering } from './touch-fingering.js';
 import { TwoTouchInstrument } from './two-touch.js';
 import { resolvePlayLayout } from './play-layout.js';
 import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from './control-mapping.js';
-import { uiStrings, initialLanguage, audioErrorText } from './i18n-ui.js?v=20261115-full-melodies';
-import { applyStaticLanguage } from './i18n-dom.js?v=20261115-full-melodies';
+import { uiStrings, initialLanguage, audioErrorText } from './i18n-ui.js?v=20261115-play-icons';
+import { applyStaticLanguage } from './i18n-dom.js?v=20261115-play-icons';
 import { localizedSong, localizedPitch, localizedControllerParts } from './i18n-songs.js?v=20261114-i18n';
 import { songPlaybackSequence } from './song-performance.js?v=20261115-score';
 
 import { fullMelodySequence } from './full-melodies.js';
-import { ostScores, scoreBook } from './ost-scores.js';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -151,26 +150,18 @@ function renderSongs() {
     </article>`;
   }).join('');
 
-  const showScores = filter === 'all' || filter === 'ost';
-  const scores = showScores ? [...ostScores, scoreBook].filter(score => {
-    const related = score === scoreBook ? SONGS : SONGS.filter(song => song.id === score.songId);
-    return matches([...Object.values(score.title), score.publisher, 'OST', ...related.flatMap(songTitles)]);
-  }) : [];
-  $('#ost-library').hidden = !scores.length;
-  $('#ost-scores').innerHTML = scores.map(score => `<a href="${score.url}" target="_blank" rel="noopener noreferrer">
-    <span><strong>${score.title[language]}</strong><small>${score.publisher} · ${score === scoreBook ? copy().pianoBook : copy().pianoScore}</small></span>
-    <span aria-hidden="true">↗</span></a>`).join('');
-  $('#empty-results').hidden = found.length + scores.length > 0;
-  $('#scarecrow-button').hidden = filter === 'ost';
+  $('#empty-results').hidden = found.length > 0;
   updatePlaybackButtons();
 }
 
 function setPlaybackButton(button, title, version, active) {
   const full = version === 'full';
-  const symbol = active ? '■' : '▶';
-  button.textContent = full ? `${symbol} ${copy().fullLabel}` : symbol;
-  if (full) button.title = active ? copy().stopFull(title) : copy().playFull(title);
-  else button.title = active ? copy().stopSong(title) : copy().playPhrase(title);
+  if (full) {
+    button.title = active ? copy().stopFull(title) : copy().playFull(title);
+  } else {
+    button.textContent = active ? '■' : '▶';
+    button.title = active ? copy().stopSong(title) : copy().playPhrase(title);
+  }
   button.setAttribute('aria-label', button.title);
   button.classList.toggle('is-playing', active);
 }
@@ -567,11 +558,6 @@ $('#score-link').onclick = () => {
   $('#expanded-score-image').src = selected.officialScore;
   $('#expanded-score-image').alt = copy().scoreAlt(songInfo(selected).title);
   $('#original-score-link').href = selected.officialScore;
-  const score = ostScores.find(entry => entry.songId === selected.id) || scoreBook;
-  const published = $('#published-score');
-  published.href = score.url;
-  const label = score === scoreBook ? copy().bookEntry(scoreBook.contents[selected.id]) : score.title[language];
-  published.textContent = `${score.publisher} · ${label} · ${copy().pianoScore} ↗`;
   $('#score-dialog').showModal();
 };
 $('#volume').value = volume * 100;

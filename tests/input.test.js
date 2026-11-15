@@ -11,7 +11,6 @@ import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from '../app
 import { initialLanguage, uiStrings, audioErrorText } from '../app/i18n-ui.js';
 import { applyStaticLanguage } from '../app/i18n-dom.js';
 import { localizedSong, localizedPitch, localizedControllerParts } from '../app/i18n-songs.js';
-import { ostScores, scoreBook } from '../app/ost-scores.js';
 import { fullMelodySequence } from '../app/full-melodies.js';
 import { songPlaybackSequence } from '../app/song-performance.js';
 
@@ -116,7 +115,7 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
     },
     OcarinaAudio: Audio, SONGS, NOTES, initialLanguage, uiStrings, audioErrorText, applyStaticLanguage, localizedSong, localizedPitch, localizedControllerParts,
     HOLES, getFingering, getMidiForHoles, TouchFingering, TwoTouchInstrument, bodySvg: () => '',
-    resolvePlayLayout, GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi, songPlaybackSequence, fullMelodySequence, ostScores, scoreBook,
+    resolvePlayLayout, GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi, songPlaybackSequence, fullMelodySequence,
     requestAnimationFrame: () => 1, cancelAnimationFrame() {},
     setTimeout(callback, delay) {
       const id = ++nextTimer;

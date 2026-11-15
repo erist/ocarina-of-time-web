@@ -194,16 +194,18 @@ dialog::backdrop { background: #040e0bd4; backdrop-filter: blur(7px); }
 .song-name { font: 500 15px var(--serif); letter-spacing: -.4px; }
 .song-en { font: italic 12px var(--roman); color: var(--muted); }
 .song-effect { display: block; margin: 5px 0 8px; color: var(--muted); font-size: 11px; line-height: 1.6; }
-.song-play { width: 44px; height: 44px; flex: 0 0 auto; border: 1px solid #b6a06b55; border-radius: 50%; background: none; color: var(--gold); font-size: 13px; }
+.song-play, .song-actions .full-play { width: 44px; height: 44px; flex: 0 0 auto; border: 1px solid #b6a06b55; border-radius: 50%; background: none; color: var(--gold); font-size: 13px; }
 .song-actions { display: grid; justify-items: center; gap: 4px; flex: 0 0 auto; }
-.full-play { min-height: 36px; padding: 4px 10px; border: 1px solid #b6a06b55; border-radius: 18px; background: transparent; color: var(--gold); font-size: 12px; white-space: nowrap; }
-.song-actions .full-play { min-height: 40px; }
-#ost-library { margin: 22px 0 0; }
-#ost-heading { margin: 0; font: 500 16px var(--serif); color: var(--cream); }
-#ost-scores a { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 52px; padding: 8px 0; border-bottom: 1px solid var(--line); color: var(--gold); text-decoration: none; }
-#ost-scores strong { display: block; font-weight: 500; }
-#ost-scores small { display: block; color: var(--muted); }
-.published-score { display: block; padding: 8px 18px 16px; color: var(--gold); font-size: 13px; }
+.full-play { display: grid; place-items: center; padding: 0; }
+.full-play::before {
+  content: "";
+  width: 24px;
+  height: 24px;
+  background-color: currentColor;
+  -webkit-mask: url("./assets/full-melody.svg") center / contain no-repeat;
+  mask: url("./assets/full-melody.svg") center / contain no-repeat;
+}
+.full-play.is-playing::before { width: 10px; height: 10px; -webkit-mask: none; mask: none; }
 .song-play.is-playing, .full-play.is-playing { background: var(--gold); color: #193022; }
 .scarecrow-card { width: 100%; min-height: 55px; display: flex; align-items: center; gap: 12px; padding: 14px; margin-top: 18px; color: var(--gold); background: #253b2a55; border: 1px dashed #a3ae784a; border-radius: 4px; text-align: left; }
 .scarecrow-card > span:nth-child(2) { flex: 1; }

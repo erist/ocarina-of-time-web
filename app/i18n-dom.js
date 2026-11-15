@@ -21,7 +21,6 @@ const messages = {
   sources: ["자료", "Sources", "参考資料"],
   scoreList: ["악보 목록", "Song library", "楽譜一覧"],
   categories: ["곡 분류", "Song categories", "曲の分類"],
-  ostScores: ["OST 악보", "Soundtrack scores", "サウンドトラックの楽譜"],
   fullPlaybackInfo: ["풀버전은 배경음악의 선율을 한 번 연주합니다. 태양의 노래와 워프곡은 게임에서 이어지는 마지막 음까지 들려줍니다.", "Full playback plays one cycle of the background theme on solo ocarina. For Sun’s Song and the warp songs, it plays the in-game melody through its ending.", "フル再生ではBGMの旋律をオカリナ独奏で一巡します。「太陽の歌」とワープ曲はゲーム内の旋律を最後まで演奏します。"],
   allSongs: ["전체", "All", "すべて"],
   adventure: ["모험", "Adventure", "冒険"],
