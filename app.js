@@ -7,7 +7,7 @@ import { TwoTouchInstrument } from './two-touch.js';
 import { resolvePlayLayout } from './play-layout.js';
 import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from './control-mapping.js';
 import { uiStrings, initialLanguage, audioErrorText } from './i18n-ui.js?v=20261115-play-icons';
-import { applyStaticLanguage } from './i18n-dom.js?v=20261115-play-icons';
+import { applyStaticLanguage } from './i18n-dom.js?v=20261115-install-guide';
 import { localizedSong, localizedPitch, localizedControllerParts } from './i18n-songs.js?v=20261114-i18n';
 import { songPlaybackSequence } from './song-performance.js?v=20261115-score';
 
@@ -535,8 +535,12 @@ for (const dialog of $$('dialog')) {
   dialog.addEventListener('cancel', stop);
   dialog.addEventListener('close', () => {
     if (dialog.open) return;
-    if (dialog.id === 'menu-dialog') $('#menu-button').setAttribute('aria-expanded', 'false');
-    if (!$$('dialog[open]').length) $(dialog.id === 'score-dialog' ? '#score-link' : '#menu-button').focus({ preventScroll: true });
+    const trigger = $(`[aria-controls="${dialog.id}"]`);
+    trigger?.setAttribute('aria-expanded', 'false');
+    if (!$$('dialog[open]').length) {
+      const opener = trigger || $(dialog.id === 'score-dialog' ? '#score-link' : '#menu-button');
+      opener.focus({ preventScroll: true });
+    }
   });
   dialog.addEventListener('click', event => {
     if (event.target !== dialog) return;
@@ -544,6 +548,27 @@ for (const dialog of $$('dialog')) {
     if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) closeDialog(dialog);
   });
 }
+function deviceInstallGuide() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && maxTouches > 1)) return 'ios';
+  if (/Android/i.test(ua) || navigator.userAgentData?.platform === 'Android') return 'android';
+  if (/Macintosh/.test(ua) && /Version\/.*Safari\//.test(ua)) return 'mac';
+  return 'desktop';
+}
+
+function showInstallSteps(platform) {
+  $('#install-platform').value = platform;
+  $$('[data-install-guide]').forEach(guide => { guide.hidden = guide.dataset.installGuide !== platform; });
+}
+
+$('#install-info').onclick = () => {
+  stop();
+  showInstallSteps(deviceInstallGuide());
+  $('#install-dialog').showModal();
+  $('#install-dialog').scrollTop = 0;
+  $('#install-info').setAttribute('aria-expanded', 'true');
+};
+$('#install-platform').onchange = event => showInstallSteps(event.target.value);
 $('#menu-button').onclick = openMenu;
 $('#song-search').oninput = renderSongs;
 $('#clear-selection').onclick = () => selectSong('free');

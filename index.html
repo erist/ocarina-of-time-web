@@ -9,12 +9,15 @@
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="./manifest.webmanifest">
   <title data-i18n="pageTitle">시간의 오카리나 · Hyrule Melody</title>
-  <link rel="stylesheet" href="./style.css?v=20261115-play-icons">
+  <link rel="stylesheet" href="./style.css?v=20261115-install-guide">
 </head>
 <body class="play-app">
   <div id="play-surface" class="play-surface">
   <header class="play-header">
     <img class="brand" src="https://www.nintendo.com/kr/games/switch2/aa9ja/assets/img/top/mv_logo.webp" alt="젤다의 전설 시간의 오카리나" width="1590" height="1270" referrerpolicy="no-referrer" fetchpriority="high" data-i18n="logo" data-i18n-attrs="alt">
+    <button type="button" class="icon-button" id="install-info" aria-label="웹앱 추가 방법" title="웹앱 추가 방법" aria-haspopup="dialog" aria-controls="install-dialog" aria-expanded="false" data-i18n="installGuide" data-i18n-attrs="aria-label title">
+      <svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.1"/></svg>
+    </button>
     <button class="icon-button" id="menu-button" aria-label="메뉴 열기" aria-haspopup="dialog" aria-controls="menu-dialog" aria-expanded="false" data-i18n="openMenu" data-i18n-attrs="aria-label"><span class="hamburger" aria-hidden="true"><i></i><i></i><i></i></span></button>
   </header>
   <main class="performance">
@@ -35,6 +38,41 @@
     </section>
   </main>
   </div>
+
+  <dialog id="install-dialog" class="small-dialog" aria-labelledby="install-title">
+    <div class="modal-header">
+      <h2 id="install-title" data-i18n="installGuide">웹앱 추가 방법</h2>
+      <button type="button" class="icon-button close-dialog" aria-label="안내 닫기" data-i18n="closeInstall" data-i18n-attrs="aria-label">✕</button>
+    </div>
+    <label class="setting-row install-platform"><span data-i18n="installPlatform">기기와 브라우저</span>
+      <select id="install-platform">
+        <option value="ios">iPhone / iPad · Safari</option>
+        <option value="android">Android · Chrome</option>
+        <option value="mac">Mac · Safari</option>
+        <option value="desktop" data-i18n="desktopChrome">컴퓨터 · Chrome</option>
+      </select>
+    </label>
+    <ol class="install-steps" data-install-guide="ios">
+      <li data-i18n="installIosShare">Safari에서 이 페이지를 열고 도구 막대나 페이지 메뉴에서 ‘공유’를 누르세요.</li>
+      <li data-i18n="installIosHome">공유 목록에서 ‘홈 화면에 추가’를 선택하세요.</li>
+      <li data-i18n="installIosConfirm">‘웹 앱으로 열기’가 보이면 켜고 ‘추가’를 누르세요.</li>
+    </ol>
+    <ol class="install-steps" data-install-guide="android" hidden>
+      <li data-i18n="installAndroidMenu">Chrome에서 이 페이지를 열고 주소창 옆 더보기(⋮)를 누르세요.</li>
+      <li data-i18n="installAndroidHome">‘설치 및 바로가기 만들기’ 또는 ‘홈 화면에 추가’를 선택하세요.</li>
+      <li data-i18n="installAndroidConfirm">‘설치’를 누르고 화면 안내를 따르세요.</li>
+    </ol>
+    <ol class="install-steps" data-install-guide="mac" hidden>
+      <li data-i18n="installMacOpen">macOS Sonoma 14 이상에서 Safari로 이 페이지를 여세요.</li>
+      <li data-i18n="installMacDock">메뉴 막대에서 ‘파일’ → ‘Dock에 추가’를 선택하세요.</li>
+      <li data-i18n="installMacConfirm">이름을 확인하고 ‘추가’를 누르세요.</li>
+    </ol>
+    <ol class="install-steps" data-install-guide="desktop" hidden>
+      <li data-i18n="installDesktopMenu">Chrome에서 이 페이지를 열고 오른쪽 위 더보기(⋮)를 누르세요.</li>
+      <li data-i18n="installDesktopApp">‘전송, 저장 및 공유’ → ‘페이지를 앱으로 설치’를 선택하세요.</li>
+      <li data-i18n="installConfirm">‘설치’를 눌러 완료하세요.</li>
+    </ol>
+  </dialog>
 
   <dialog id="menu-dialog" class="menu-dialog" aria-labelledby="menu-title">
     <div class="modal-header"><h2 id="menu-title" data-i18n="menu">메뉴</h2><button class="icon-button close-dialog" aria-label="메뉴 닫기" data-i18n="closeMenu" data-i18n-attrs="aria-label">✕</button></div>
@@ -77,6 +115,7 @@
       <a href="https://www.nintendo.com/kr/games/switch2/aa9ja/index.html" target="_blank" rel="noopener noreferrer" data-i18n="logoSource">Nintendo 공식 로고 출처 ↗</a>
       <a href="https://www.nintendo.com/jp/games/switch2/aa9ja/melody/index.html" target="_blank" rel="noopener noreferrer" data-i18n="scoreSource">Nintendo 공식 악보 ↗</a>
       <a href="https://hori.jp/manual/nsx-261/" target="_blank" rel="noopener noreferrer" data-i18n="horiSource">HORI 공식 운지표 ↗</a>
+      <a href="https://github.com/erist/ocarina-of-time-web" target="_blank" rel="noopener noreferrer" data-i18n="githubSource">GitHub 저장소 ↗</a>
     </section>
   </dialog>
 
@@ -92,7 +131,7 @@
     <div class="expanded-score"><img id="expanded-score-image" width="1912" height="874" alt="" referrerpolicy="no-referrer"></div>
   </dialog>
   <div id="toast" role="status" class="toast"></div>
-  <script type="module" src="./app.js?v=20261115-play-icons"></script>
+  <script type="module" src="./app.js?v=20261115-install-guide"></script>
   <script type="module" async src="./visit-counter.js?v=20261115"></script>
 </body>
 </html>
