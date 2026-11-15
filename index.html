@@ -9,7 +9,7 @@
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
   <link rel="manifest" href="./manifest.webmanifest">
   <title data-i18n="pageTitle">시간의 오카리나 · Hyrule Melody</title>
-  <link rel="stylesheet" href="./style.css?v=20261115-full-melodies">
+  <link rel="stylesheet" href="./style.css?v=20261115-play-icons">
 </head>
 <body class="play-app">
   <div id="play-surface" class="play-surface">
@@ -25,7 +25,7 @@
       <div class="selected-heading"><h1 id="practice-title" data-i18n="lullaby">젤다의 자장가</h1><button class="icon-button" id="clear-selection" aria-label="악보 접고 자유 연주" data-i18n="clearSelection" data-i18n-attrs="aria-label">✕</button></div>
       <div class="selected-actions">
         <button class="icon-button" id="practice-play" aria-label="선택한 곡 재생" title="선택한 곡 재생" data-i18n="playSelected" data-i18n-attrs="aria-label title">▶</button>
-        <button class="full-play" id="practice-full" hidden>▶ 풀버전</button>
+        <button class="icon-button full-play" id="practice-full" aria-label="풀버전 재생" hidden></button>
         <button class="icon-button" id="practice-reset" aria-label="연습 다시 시작" title="연습 다시 시작" data-i18n="restartPractice" data-i18n-attrs="aria-label title">↺</button>
       </div>
       <div id="practice-sequence" class="practice-sequence" aria-label="연주 순서" data-i18n="noteOrder" data-i18n-attrs="aria-label"></div>
@@ -45,13 +45,9 @@
       <button data-menu-page="sources" aria-pressed="false" aria-label="자료" title="자료" data-i18n="sources" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7v.1"/></svg></button>
     </nav>
     <section class="menu-panel" data-panel="songs" aria-label="악보 목록" data-i18n="scoreList" data-i18n-attrs="aria-label">
-      <div class="library-toolbar"><div class="filters" aria-label="곡 분류" data-i18n="categories" data-i18n-attrs="aria-label"><button class="active" data-filter="all" aria-pressed="true" aria-label="전체" title="전체" data-i18n="allSongs" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button><button data-filter="utility" aria-pressed="false" aria-label="모험" title="모험" data-i18n="adventure" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5Z"/></svg></button><button data-filter="warp" aria-pressed="false" aria-label="워프" title="워프" data-i18n="warp" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5Z"/></svg></button><button data-filter="ost" aria-pressed="false" aria-label="OST 악보" title="OST 악보" data-i18n="ostScores" data-i18n-attrs="aria-label title">OST</button></div><button class="text-button" id="free-play" aria-label="자유 연주" title="자유 연주" data-i18n="freePlay" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 19V7l10-3v12M7 11l10-3"/><ellipse cx="4" cy="19" rx="3" ry="2"/><ellipse cx="14" cy="16" rx="3" ry="2"/></svg></button></div>
+      <div class="library-toolbar"><div class="filters" aria-label="곡 분류" data-i18n="categories" data-i18n-attrs="aria-label"><button class="active" data-filter="all" aria-pressed="true" aria-label="전체" title="전체" data-i18n="allSongs" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button><button data-filter="utility" aria-pressed="false" aria-label="모험" title="모험" data-i18n="adventure" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5Z"/></svg></button><button data-filter="warp" aria-pressed="false" aria-label="워프" title="워프" data-i18n="warp" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5Z"/></svg></button></div><button class="text-button" id="free-play" aria-label="자유 연주" title="자유 연주" data-i18n="freePlay" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 19V7l10-3v12M7 11l10-3"/><ellipse cx="4" cy="19" rx="3" ry="2"/><ellipse cx="14" cy="16" rx="3" ry="2"/></svg></button></div>
       <div class="search-wrap"><label for="song-search" class="sr-only" data-i18n="search">곡 검색</label><input id="song-search" type="search" placeholder="곡 검색" autocomplete="off" data-i18n="search" data-i18n-attrs="placeholder"></div>
       <div id="song-list" class="song-list"></div><p id="empty-results" class="empty-results" hidden data-i18n="noResults">검색 결과 없음</p>
-      <section id="ost-library" aria-labelledby="ost-heading" hidden>
-        <h3 id="ost-heading" data-i18n="ostScores">OST 악보</h3>
-        <div id="ost-scores"></div>
-      </section>
       <button class="scarecrow-card" id="scarecrow-button"><span aria-hidden="true">♧</span><strong data-i18n="scarecrow">허수아비의 노래</strong><span aria-hidden="true">＋</span></button>
     </section>
     <section class="menu-panel" data-panel="settings" aria-label="연주 설정" hidden data-i18n="instrumentSettings" data-i18n-attrs="aria-label">
@@ -94,10 +90,9 @@
   <dialog id="score-dialog" class="score-dialog" aria-labelledby="expanded-title">
     <div class="modal-header"><h2 id="expanded-title"></h2><a id="original-score-link" class="icon-button" target="_blank" rel="noopener noreferrer" aria-label="악보 원본 열기" title="악보 원본 열기" data-i18n="originalScore" data-i18n-attrs="aria-label title">↗</a><button class="icon-button close-dialog" aria-label="확대 악보 닫기" data-i18n="closeScore" data-i18n-attrs="aria-label">✕</button></div>
     <div class="expanded-score"><img id="expanded-score-image" width="1912" height="874" alt="" referrerpolicy="no-referrer"></div>
-    <a id="published-score" class="published-score" target="_blank" rel="noopener noreferrer"></a>
   </dialog>
   <div id="toast" role="status" class="toast"></div>
-  <script type="module" src="./app.js?v=20261115-full-melodies"></script>
+  <script type="module" src="./app.js?v=20261115-play-icons"></script>
   <script type="module" async src="./visit-counter.js?v=20261115"></script>
 </body>
 </html>
