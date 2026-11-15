@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The owner initializes and reads the single document through Cloud IAM.
+    match /sites/ocarina {
+      function increment(key) {
+        return request.resource.data[key] - resource.data[key];
+      }
+      function zeroOrOne(key) {
+        return request.resource.data[key] is int && increment(key) in [0, 1];
+      }
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'pageViews', 'visits', 'visitors', 'instagramViews', 'instagramVisits', 'instagramVisitors'])
+        && request.resource.data.pageViews is int && increment('pageViews') == 1
+        && zeroOrOne('visits') && zeroOrOne('visitors') && zeroOrOne('instagramViews')
+        && zeroOrOne('instagramVisits') && zeroOrOne('instagramVisitors')
+        && increment('visitors') <= increment('visits')
+        && increment('instagramVisits') <= increment('visits')
+        && increment('instagramVisits') <= increment('instagramViews')
+        && increment('instagramVisitors') <= increment('instagramViews');
+    }
+  }
+}

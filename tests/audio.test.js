@@ -304,7 +304,7 @@ test('automatic notes use the same pitch, wave and vibrato as all five manual bu
   }
 });
 
-test('song playback separates repeated notes and releases every final note without a long tail', async () => {
+test('song playback separates repeated notes and preserves the short endings on unmeasured phrases', async () => {
   const songs = [...SONGS, { id: 'custom', notes: ['D', 'D', 'F', 'F', 'A', 'A', 'B', 'B'] }];
   let repeatedPairs = 0;
   for (const song of songs) {
@@ -321,13 +321,45 @@ test('song playback separates repeated notes and releases every final note witho
         assert.equal(tones[index - 1].frequency.value, tones[index].frequency.value);
       }
     }
-    const final = tones.at(-1);
-    assert.ok(final.stoppedAt - final.startedAt <= 0.35 + 1e-9, `${song.id}: short final note`);
+    if (!['time', 'epona'].includes(song.id)) {
+      const final = tones.at(-1);
+      assert.ok(final.stoppedAt - final.startedAt <= 0.35 + 1e-9, `${song.id}: short final note`);
+    }
     clock.tick(10000);
     assert.equal(await playing, true);
     assert.equal(clock.jobs.size, 0, song.id);
   }
   assert.ok(repeatedPairs >= 6, 'exercise repeated pitches in Serenade, Nocturne, and the custom song');
+});
+
+test('Time and Epona scale each pitched attack, release and rest with the original rhythm', async () => {
+  // Measured from the first pitched attack (the recordings have ~50ms of intro silence).
+  const references = {
+    time:  [[0,.498], [.540,1.608], [1.628,2.148], [2.197,2.693], [2.736,3.793], [3.824,5.498]],
+    epona: [[0,.371], [.381,.696], [.705,2.121], [2.186,2.556], [2.567,2.898], [2.907,5.451]],
+  };
+  for (const [id, timing] of Object.entries(references)) {
+    const song = SONGS.find(song => song.id === id);
+    for (const bpm of [50, 100, 160]) {
+      const audio = await readyAudio();
+      const sequence = songPlaybackSequence(song);
+      const playing = audio.play(sequence, { bpm });
+      await Promise.resolve();
+      const tones = audio.context.oscillators.filter((_, index) => index % 2 === 0);
+      const phaseStart = tones[0].startedAt;
+      timing.forEach(([attack, release], index) => {
+        const gain = audio.context.gains[1 + index * 2].gain;
+        const [operation, value, silentAt] = gain.events.at(-1);
+        assert.equal(operation, 'ramp');
+        assert.equal(value, 0);
+        assert.ok(Math.abs(tones[index].startedAt - phaseStart - attack * 100 / bpm) < 1e-9);
+        assert.ok(Math.abs(silentAt - phaseStart - release * 100 / bpm) < 1e-9);
+      });
+      assert.equal(sequence.at(-1).noteIndex, 5, 'no tail rest after the final pitched release');
+      clock.tick(15000);
+      assert.equal(await playing, true);
+    }
+  }
 });
 
 test('normal completion reports each note and exactly one completion', async () => {

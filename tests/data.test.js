@@ -41,8 +41,12 @@ test('each song plays the canonical short game command in the correct order', ()
     assert.deepEqual(sequence.filter(note => note.midi !== null).map(note => note.midi), gameCommands[song.id]);
     assert.deepEqual(sequence.filter(note => note.midi !== null).map(note => note.noteIndex), song.notes.map((_, i) => i));
     assert.ok(sequence.every(note => note.beats > 0));
-    if (song.id !== 'zelda') assert.ok(sequence.filter(note => note.midi !== null).every(note => note.beats * .6 <= .35 + 1e-9));
-    assert.ok(Math.abs(sequence.at(-1).beats * .6 - .35) < 1e-9, 'final note has no extended tail');
+    if (!['zelda', 'time', 'epona'].includes(song.id)) {
+      assert.ok(sequence.filter(note => note.midi !== null).every(note => note.beats * .6 <= .35 + 1e-9));
+    }
+    if (!['time', 'epona'].includes(song.id)) {
+      assert.ok(Math.abs(sequence.at(-1).beats * .6 - .35) < 1e-9, 'short final note');
+    }
   }
 });
 
@@ -98,7 +102,7 @@ test('official alternate D-sharp fingerings keep the same sounding pitches', () 
 });
 
 
-test('shortened notes retain measured attack spacing and clear score emphasis during rests', () => {
+test('the measured Epona phrase preserves transposed notes and clears score emphasis during rests', () => {
   const song = SONGS.find(song => song.id === 'epona');
   const sequence = songPlaybackSequence(song, -12);
   let seconds = 0;
