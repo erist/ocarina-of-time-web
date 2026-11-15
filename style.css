@@ -110,10 +110,12 @@ body[data-mode='merch'] .performance, body[data-mode='simple'] .performance { --
   --key-fill: var(--brass); --rim: #f1dcab; color: var(--forest);
 }
 .hole.held::before { outline: 1px solid #f5deb0; outline-offset: 2px; }
-.controller-hole {
-  --key-inset: 14%;
-  width: clamp(44px, 13cqw, 64px); height: clamp(44px, 13cqw, 64px);
-  font-size: 17px; font-weight: 550;
+.hole.controller-hole {
+  /* The closest finger positions are 13.7% of the instrument width apart. */
+  --key-size: min(13.2cqw, 84px);
+  --key-inset: 0;
+  width: var(--key-size); height: var(--key-size);
+  font-size: clamp(17px, 5cqw, 26px); font-weight: 600;
 }
 .instrument-dock { position: absolute; inset: auto 0 max(12px, env(safe-area-inset-bottom)); display: flex; align-items: center; justify-content: center; gap: 20px; }
 .instrument-dock:not(.touch-dock), .simple-scene .quick-notes { left: var(--split); }
@@ -257,7 +259,6 @@ body[data-mode='merch'] .performance, body[data-mode='simple'] .performance { --
   }
   .hole { width: 38px; height: 38px; }
   .hole.small { width: 28px; height: 28px; }
-  .controller-hole { width: 44px; height: 44px; font-size: 15px; }
   .shift-rail { bottom: max(20px, calc(env(safe-area-inset-bottom) + 8px)); }
   .touch-dock { bottom: calc(max(20px, env(safe-area-inset-bottom) + 8px) + 56px); }
   .instrument-dock:not(.touch-dock) { flex-wrap: wrap; gap: 6px 12px; }
@@ -313,7 +314,6 @@ body[data-mode='merch'] .performance, body[data-mode='simple'] .performance { --
   .shift-label { bottom: calc(100% + 3px); }
   .touch-dock { bottom: calc(max(8px, env(safe-area-inset-bottom)) + 43px); width: var(--score-width); }
 
-  .controller-hole { width: clamp(42px, 13cqw, 48px); height: clamp(42px, 13cqw, 48px); font-size: 16px; }
   body[data-mode='touch'] .performance[data-free='true'] { --split: calc(2 * var(--gutter) + var(--score-width)); --dock-space: 0px; }
   .performance[data-free='true'] .instrument-stage::before { left: 0; }
   .performance[data-free='true'] .shift-rail, .performance[data-free='true'] .touch-dock {
