@@ -45,7 +45,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 /* The whole viewport is the instrument, with the score in its open space. */
 .play-header {
   position: absolute; inset: max(9px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) auto max(20px, env(safe-area-inset-left));
-  z-index: 5; display: flex; align-items: center; justify-content: flex-end; pointer-events: none;
+  z-index: 5; display: flex; align-items: center; justify-content: flex-end; gap: 4px; pointer-events: none;
 }
 .brand { position: absolute; top: -8px; left: 53%; transform: translateX(-50%); display: block; width: clamp(140px, 21cqw, 220px); height: 112px; object-fit: contain; filter: drop-shadow(0 2px 7px #06120eaa); }
 .control-icon { display: block; width: 22px; height: 22px; margin: auto; }
@@ -54,8 +54,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   background: transparent; color: var(--gold); border: 1px solid var(--line);
   border-radius: 50%; font-size: 19px;
 }
-#menu-button { border: 0; border-radius: 6px; background: #10221955; pointer-events: auto; }
-#menu-button svg { width: 21px; height: 21px; }
+.play-header .icon-button { border: 0; border-radius: 6px; background: #10221955; pointer-events: auto; }
+.play-header .control-icon { width: 21px; height: 21px; }
 .hamburger { display: flex; flex-direction: column; justify-content: center; gap: 5px; width: 20px; height: 24px; }
 .hamburger i { display: block; width: 100%; height: 1px; background: currentColor; }
 .performance {
@@ -231,6 +231,13 @@ dialog::backdrop { background: #040e0bd4; backdrop-filter: blur(7px); }
 .source-copy a { display: block; color: var(--gold); padding: 10px 0; }
 .small-dialog { width: min(440px, calc(100% - 28px)); padding: 0 22px 22px; }
 .small-dialog .modal-header { padding: 19px 0 10px; }
+.install-platform.setting-row { margin: 6px 0 16px; gap: 6px; }
+.install-platform > span { color: var(--muted); font-size: 12px; }
+.install-steps { margin: 0; padding-inline-start: 1.5em; line-height: 1.65; }
+html:lang(ko) .install-steps { word-break: keep-all; }
+.install-steps li { padding-inline-start: 3px; }
+.install-steps li + li { margin-top: 8px; }
+.install-steps li::marker { color: var(--gold); font-weight: 600; }
 .muted { color: var(--muted); font-size: 12px; line-height: 1.8; }
 .small-dialog .practice-sequence { gap: 6px; }
 .small-dialog .practice-step .mini-note { width: 29px; height: 29px; font-size: 11px; }
