@@ -139,7 +139,8 @@
 
   <dialog id="scarecrow-dialog" class="small-dialog" aria-labelledby="custom-title">
     <div class="modal-header"><h2 id="custom-title" tabindex="-1" autofocus data-i18n="scarecrow">허수아비의 노래</h2><button class="icon-button close-dialog" aria-label="허수아비 노래 닫기" data-i18n="closeScarecrow" data-i18n-attrs="aria-label"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="./assets/ui-icons.svg#close"/></svg></button></div>
-    <div id="custom-sequence" class="practice-sequence" aria-label="사용자 지정 8음" data-i18n="customSequence" data-i18n-attrs="aria-label"></div>
+    <p id="custom-help" class="input-hint"></p>
+    <div id="custom-sequence" class="practice-sequence" aria-label="연주 순서" data-i18n="noteOrder" data-i18n-attrs="aria-label"></div>
     <div id="custom-keys" class="custom-keys"></div>
     <div class="practice-tools"><button id="custom-clear" class="icon-button" aria-label="허수아비 노래 초기화" title="허수아비 노래 초기화" data-i18n="resetScarecrow" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="./assets/ui-icons.svg#restart"/></svg></button><button id="custom-play" class="icon-button" aria-label="허수아비의 노래 재생" title="허수아비의 노래 재생" disabled data-i18n="playScarecrow" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="./assets/ui-icons.svg#play"/></svg></button><button id="custom-select" class="icon-button" aria-label="허수아비 노래 선택" title="허수아비 노래 선택" disabled data-i18n="selectScarecrow" data-i18n-attrs="aria-label title"><svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="./assets/ui-icons.svg#check"/></svg></button></div>
   </dialog>
@@ -149,7 +150,7 @@
     <div class="expanded-score"><img id="expanded-score-image" width="1912" height="874" alt="" referrerpolicy="no-referrer"></div>
   </dialog>
   <div id="toast" role="status" class="toast"></div>
-  <script type="module" src="./app.js?v=20261115-controls"></script>
+  <script type="module" src="./app.js?v=20261116-scarecrow"></script>
   <script type="module" async src="./visit-counter.js?v=20261115"></script>
 </body>
 </html>

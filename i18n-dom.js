@@ -87,7 +87,6 @@ const messages = {
   scoreSource: ["Nintendo 공식 악보 ↗", "Nintendo · Official scores ↗", "任天堂公式楽譜 ↗"],
   horiSource: ["HORI 공식 운지표 ↗", "HORI · Official fingering chart ↗", "HORI公式運指表 ↗"],
   closeScarecrow: ["허수아비 노래 닫기", "Close Scarecrow's Song", "カカシの歌を閉じる"],
-  customSequence: ["사용자 지정 8음", "Your eight-note sequence", "自分で決めた8音"],
   resetScarecrow: ["허수아비 노래 초기화", "Clear Scarecrow's Song", "カカシの歌をリセット"],
   playScarecrow: ["허수아비의 노래 재생", "Play Scarecrow's Song", "カカシの歌を再生"],
   selectScarecrow: ["허수아비 노래 선택", "Select Scarecrow's Song", "カカシの歌を選択"],

@@ -1,4 +1,4 @@
-import { SONGS, SCARECROW } from './songs.js';
+import { SONGS, SCARECROW } from './songs.js?v=20261116-scarecrow';
 
 const free = { id: 'free', title: '자유 연주', en: 'Free play' };
 const originals = new Map([...SONGS, SCARECROW, free].map(song => [song.id, song]));
@@ -18,7 +18,7 @@ const en = {
   prelude: { destination: 'Temple of Time', effect: 'Returns you to the Temple of Time, where the Master Sword rests.' },
   scarecrow: {
     effect: 'Play your eight-note tune in certain places to summon a scarecrow you can reach with the Hookshot.',
-    help: 'Enter the same eight notes you taught the scarecrow in the game.',
+    help: 'Your tune is saved in this browser once you enter 5 notes. You can enter up to 8.',
   },
 };
 
@@ -40,7 +40,7 @@ const ja = {
   scarecrow: {
     title: 'カカシの歌',
     effect: '決めた8音を特定の場所で演奏すると、フックショットでつかまれるカカシが現れます。',
-    help: 'ゲームでカカシに教えた8音を、同じ順番で入力してください。',
+    help: '5音入力すると、このブラウザに自動保存されます。最大8音まで入力できます。',
   },
   free: { title: '自由演奏' },
 };
