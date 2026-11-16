@@ -125,7 +125,7 @@ export const SONGS = Object.freeze(entries.map(({ scoreFile, ...song }) => Objec
 })));
 
 export const SCARECROW = Object.freeze({
-  id: 'scarecrow', title: '허수아비의 노래', en: "Scarecrow's Song", length: 8,
+  id: 'scarecrow', title: '허수아비의 노래', en: "Scarecrow's Song", minLength: 5, maxLength: 8,
   effect: '게임에서 직접 정한 8음을 연주해, 특정 장소에 후크샷을 걸 수 있는 허수아비를 불러요.',
-  help: '정해진 악보가 없어요. 게임에서 등록한 8음과 같은 순서로 저장해 주세요.',
+  help: '5음부터 이 브라우저에 자동 저장돼요. 최대 8음까지 입력할 수 있어요.',
 });

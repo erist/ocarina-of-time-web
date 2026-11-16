@@ -1,5 +1,5 @@
 import { OcarinaAudio } from './audio.js?v=20261115-score';
-import { SONGS, NOTES } from './songs.js?v=20261114-button-audio';
+import { SONGS, NOTES, SCARECROW } from './songs.js?v=20261116-scarecrow';
 import { HOLES, getFingering, getMidiForHoles } from './fingering.js';
 import { bodySvg } from './instrument-art.js?v=20261113-ceramic';
 import { TouchFingering } from './touch-fingering.js';
@@ -8,7 +8,7 @@ import { resolvePlayLayout } from './play-layout.js';
 import { GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi } from './control-mapping.js';
 import { uiStrings, initialLanguage, audioErrorText } from './i18n-ui.js?v=20261115-controls';
 import { applyStaticLanguage } from './i18n-dom.js?v=20261115-controls';
-import { localizedSong, localizedPitch, localizedControllerParts } from './i18n-songs.js?v=20261114-i18n';
+import { localizedSong, localizedPitch, localizedControllerParts } from './i18n-songs.js?v=20261116-scarecrow';
 import { songPlaybackSequence } from './song-performance.js?v=20261115-score';
 
 import { fullMelodySequence } from './full-melodies.js';
@@ -44,7 +44,7 @@ try {
   mode = saved.version === 2 && ['touch', 'merch', 'simple'].includes(saved.mode) ? saved.mode : 'touch';
   if (['auto', 'left', 'right'].includes(saved.rotationMode)) rotationMode = saved.rotationMode;
   const notes = JSON.parse(localStorage.getItem('hyrule-scarecrow') || '[]');
-  if (Array.isArray(notes)) custom = notes.filter(n => Object.hasOwn(NOTES, n)).slice(0, 8);
+  if (Array.isArray(notes)) custom = notes.filter(n => typeof n === 'string' && Object.hasOwn(NOTES, n)).slice(0, SCARECROW.maxLength);
   selectedId = localStorage.getItem('hyrule-selected-song') || selectedId;
 } catch {}
 audio.setVolume(volume);
@@ -184,7 +184,7 @@ function updatePlaybackButtons() {
   setPlaybackButton($('#practice-full'), title, 'full', active && playingVersion === 'full');
   $('#practice-full').hidden = !selected || selected.id === 'custom';
   $('#custom-play').innerHTML = controlIcon(playing === 'custom' ? 'stop' : 'play');
-  const customTitle = songInfo(customSong()).title;
+  const customTitle = songInfo(SCARECROW).title;
   $('#custom-play').title = playing === 'custom' ? copy().stopSong(customTitle) : copy().playSong(customTitle);
   $('#custom-play').setAttribute('aria-label', $('#custom-play').title);
 }
@@ -383,11 +383,12 @@ async function playSong(song, version = 'short') {
   } catch (error) { if (generation === playGeneration) { stop(); toast(audioErrorText(error, language)); } }
 }
 function customSong() {
+  if (custom.length < SCARECROW.minLength) return null;
   return { id: 'custom', notes: [...custom] };
 }
 function selectSong(id, persist = true) {
   stop();
-  selected = id === 'custom' && custom.length === 8 ? customSong() : SONGS.find(song => song.id === id) || null;
+  selected = id === 'custom' ? customSong() : SONGS.find(song => song.id === id) || null;
   selectedId = selected?.id || 'free';
   resetProgress();
   renderSelection();
@@ -447,9 +448,10 @@ function openMenu() {
 }
 function renderCustom() {
   $('#custom-keys').innerHTML = noteEntries.map(([id, note]) => `<button data-custom="${id}" aria-label="${copy().addPitch(pitchLabel(note.midi))}">${noteLabel(id)}</button>`).join('');
-  $('#custom-sequence').innerHTML = Array.from({ length: 8 }, (_, i) => `<span class="practice-step"><span class="mini-note ${custom[i] === 'd' ? 'high' : ''}">${custom[i] ? noteLabel(custom[i]) : '·'}</span><small>${i + 1}</small></span>`).join('');
-  $('#custom-play').disabled = custom.length !== 8;
-  $('#custom-select').disabled = custom.length !== 8;
+  $('#custom-sequence').innerHTML = Array.from({ length: SCARECROW.maxLength }, (_, i) => `<span class="practice-step"><span class="mini-note ${custom[i] === 'd' ? 'high' : ''}">${custom[i] ? noteLabel(custom[i]) : '·'}</span><small>${i + 1}</small></span>`).join('');
+  const tooShort = custom.length < SCARECROW.minLength;
+  $('#custom-play').disabled = tooShort;
+  $('#custom-select').disabled = tooShort;
 }
 
 // A mobile browser can grant audio activation only when the touch ends.
@@ -631,11 +633,14 @@ $('#scarecrow-button').onclick = () => { stop(); closeMenu(); renderCustom(); $(
 $('#custom-keys').onclick = async event => {
   const button = event.target.closest('[data-custom]');
   if (!button) return;
-  if (custom.length >= 8) { toast(copy().eightEntered); return; }
+  if (custom.length >= SCARECROW.maxLength) { toast(copy().eightEntered); return; }
   custom.push(button.dataset.custom);
   renderCustom();
-  try { localStorage.setItem('hyrule-scarecrow', JSON.stringify(custom)); } catch {}
-  stop();
+  if (custom.length >= SCARECROW.minLength) {
+    try { localStorage.setItem('hyrule-scarecrow', JSON.stringify(custom)); } catch {}
+  }
+  if (selected?.id === 'custom') selectSong('custom', false);
+  else stop();
   await playPreview(NOTES[button.dataset.custom].midi, 0.3);
 };
 $('#custom-clear').onclick = () => {
@@ -645,7 +650,11 @@ $('#custom-clear').onclick = () => {
   renderCustom();
 };
 $('#custom-play').onclick = () => playSong(customSong());
-$('#custom-select').onclick = () => { if (custom.length === 8) { closeDialog($('#scarecrow-dialog')); selectSong('custom'); } };
+$('#custom-select').onclick = () => {
+  if (custom.length < SCARECROW.minLength) return;
+  closeDialog($('#scarecrow-dialog'));
+  selectSong('custom');
+};
 
 function applyLayout() {
   const layout = resolvePlayLayout(window.innerWidth, window.innerHeight, rotationMode);
@@ -694,6 +703,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) reset
 function renderLanguage() {
   applyStaticLanguage(language, document);
   $('#language').value = language;
+  $('#custom-help').textContent = songInfo(SCARECROW).help;
   renderGuide();
   renderInstrument();
   renderCustom();

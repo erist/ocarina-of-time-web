@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { SONGS, NOTES } from '../app/songs.js';
+import { SONGS, NOTES, SCARECROW } from '../app/songs.js';
 import { HOLES, getFingering, getMidiForHoles } from '../app/fingering.js';
 import { TouchFingering } from '../app/touch-fingering.js';
 import { TwoTouchInstrument } from '../app/two-touch.js';
@@ -19,13 +19,12 @@ import { songPlaybackSequence } from '../app/song-performance.js';
 const source = readFileSync(new URL('../app/app.js', import.meta.url), 'utf8')
   .replace(/^import .*;\n/gm, '');
 
-function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, height = 844, octave = 0, custom = [], settings = { version: 2, mode, octave }, languages = ['ko-KR'] } = {}) {
+function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, height = 844, octave = 0, storage = new Map(), settings = { version: 2, mode, octave }, languages = ['ko-KR'] } = {}) {
   let now = 0, nextTimer = 0, audio;
   const timers = new Map();
   const listeners = new Map();
   const nodes = new Map();
   const windowListeners = new Map();
-  const storage = new Map([['hyrule-scarecrow', JSON.stringify(custom)]]);
   if (settings) storage.set('hyrule-settings', JSON.stringify(settings));
   const layoutStyles = new Map();
   const hitTests = [];
@@ -36,7 +35,7 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
     setAttribute() {}, hasAttribute(name) {
       return name.startsWith('data-') && Object.hasOwn(this.dataset, name.slice(5).replace(/-([a-z])/g, (_, char) => char.toUpperCase()));
     }, addEventListener() {},
-    append() {}, replaceChildren() {}, focus() {}, pause() { this.paused = true; },
+    append() {}, replaceChildren() {}, focus() {}, close() { this.open = false; }, pause() { this.paused = true; },
     async play() { this.paused = false; },
     setPointerCapture() {}, matches() { return false; },
     querySelectorAll() { return []; }, querySelector() { return null; },
@@ -113,7 +112,7 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
       setItem(key, value) { storage.set(key, value); },
       removeItem(key) { storage.delete(key); },
     },
-    OcarinaAudio: Audio, SONGS, NOTES, initialLanguage, uiStrings, audioErrorText, applyStaticLanguage, localizedSong, localizedPitch, localizedControllerParts,
+    OcarinaAudio: Audio, SONGS, NOTES, SCARECROW, initialLanguage, uiStrings, audioErrorText, applyStaticLanguage, localizedSong, localizedPitch, localizedControllerParts,
     HOLES, getFingering, getMidiForHoles, TouchFingering, TwoTouchInstrument, bodySvg: () => '',
     resolvePlayLayout, GAME_SCALE, SCALE_GUIDE, controlForNote, gameNoteForMidi, songPlaybackSequence, fullMelodySequence,
     requestAnimationFrame: () => 1, cancelAnimationFrame() {},
@@ -135,6 +134,7 @@ function fixture({ maxTouches = 10, unlock = null, mode = 'merch', width = 390, 
     nodes,
     storage,
     playSong(id, version) { dispatch('click', { detail: 1, target: target({ play: id, version }) }); },
+    addCustom(note) { nodes.get('#custom-keys').onclick({ target: target({ custom: note }) }); },
     playCustom() { nodes.get('#custom-play').onclick(); },
     state: window.ocarinaState,
     flush,
@@ -490,9 +490,40 @@ test('switching versions of the same song replaces playback and ignores the old 
   assert.equal(app.state().playing, null);
 });
 
-test('custom playback uses the same short-note synthesis sequence', async () => {
+test('custom notes auto-save at five and remain playable and selected through eight on reload', () => {
+  const app = fixture();
+  const notes = ['D', 'D', 'F', 'A', 'B', 'd', 'A', 'D'];
+  const key = 'hyrule-scarecrow';
+  for (const [index, note] of notes.entries()) {
+    app.addCustom(note);
+    const ready = index + 1 >= 5;
+    assert.equal(app.nodes.get('#custom-play').disabled, !ready);
+    assert.equal(app.nodes.get('#custom-select').disabled, !ready);
+    if (!ready) {
+      assert.equal(app.storage.has(key), false);
+      continue;
+    }
+    const expected = notes.slice(0, index + 1);
+    assert.deepEqual(JSON.parse(app.storage.get(key)), expected);
+    if (index + 1 === 5) app.nodes.get('#custom-select').onclick();
+    for (const player of [app, fixture({ storage: app.storage })]) {
+      assert.equal(player.state().selected, 'custom');
+      player.nodes.get('#practice-play').onclick();
+      const pitched = player.audio.playback.sequence.filter(note => note.midi !== null);
+      assert.deepEqual(Array.from(pitched, note => note.midi), expected.map(id => NOTES[id].midi));
+    }
+  }
+  app.addCustom('F');
+  assert.deepEqual(JSON.parse(app.storage.get(key)), notes);
+  app.nodes.get('#custom-clear').onclick();
+  assert.equal(app.storage.has(key), false);
+  assert.equal(app.state().selected, null);
+  assert.equal(app.nodes.get('#custom-select').disabled, true);
+});
+
+test('custom playback uses the same short-note synthesis sequence for existing saved tunes', async () => {
   const custom = ['D', 'D', 'F', 'A', 'B', 'd', 'A', 'D'];
-  const app = fixture({ mode: 'touch', custom });
+  const app = fixture({ mode: 'touch', storage: new Map([['hyrule-scarecrow', JSON.stringify(custom)]]) });
   app.playCustom();
   await app.flush();
   assert.equal(app.state().playing, 'custom');

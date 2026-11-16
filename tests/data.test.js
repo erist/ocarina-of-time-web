@@ -60,10 +60,10 @@ test('each list entry has an effect and its own official score without a recordi
   }
 });
 
-test('the custom scarecrow song requires eight notes instead of a fabricated fixed score', () => {
-  assert.equal(SCARECROW.length, 8);
+test('the custom scarecrow song accepts five to eight notes without a fixed score', () => {
+  assert.equal(SCARECROW.minLength, 5);
+  assert.equal(SCARECROW.maxLength, 8);
   assert.equal(SCARECROW.notes, undefined);
-  assert.ok(SCARECROW.help.includes('정해진 악보가 없어요'));
 });
 
 test('all 25 merchandise fingerings round-trip even when hole order is reversed', () => {
